@@ -1,48 +1,32 @@
-# Akamai Home Assignment
+# React + TypeScript + Vite
 
-A TypeScript/Node.js project built as part of the Akamai home assignment.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Prerequisites
+Currently, two official plugins are available:
 
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Setup
+## React Compiler
 
-```bash
-# Clone the repository
-git clone https://github.com/your-username/Akamai-Home-Assignment.git
-cd Akamai-Home-Assignment
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-# Install dependencies
-npm install
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
 ```
 
-## Running the Project
-
-```bash
-# Development mode
-npm run dev
-
-# Build
-npm run build
-
-# Run the built output
-npm start
-```
-
-## Running Tests
-
-```bash
-npm test
-```
-
-## Project Structure
-
-```
-.
-├── src/          # Source files
-├── dist/         # Compiled output (generated)
-├── package.json
-└── tsconfig.json
-```
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
