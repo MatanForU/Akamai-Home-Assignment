@@ -24,63 +24,57 @@ const ACTIONS: { action: RecommendedAction; icon: typeof SearchCheck; helper: st
   { action: "update_spec", icon: FileEdit, helper: "Traffic reflects intended, legitimate behavior — update the spec to match it." },
   { action: "notify_dev", icon: MessageSquareWarning, helper: "Ownership or intent is unclear — ask the owning team to confirm before deciding." },
   { action: "no_action", icon: CircleCheck, helper: "Low-risk drift, deprecated endpoint, or already-known issue. Dismiss for now." },
-];
-
 export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => void }) {
   const [resolvedAction, setResolvedAction] = useState<RecommendedAction | null>(null);
   const risk = computeRisk(issue.issueType, issue.area, issue.traffic7d, issue.lastSeenMinutesAgo);
 
   return (
-    <div className="mx-auto max-w-5xl animate-fade-in px-4 py-6 sm:px-6 sm:py-8">
-      <button
-        onClick={onBack}
-        className="mb-4 flex items-center gap-1.5 rounded-md text-sm font-medium text-slate-500 transition hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:text-slate-400 dark:hover:text-slate-100 dark:focus-visible:outline-indigo-400"
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-slide-in-right">
+      <button 
+        onClick={onBack} 
+        className="group mb-6 flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
       >
-        <ArrowLeft className="h-4 w-4" />
-        Back to priority queue
-        <kbd className="ml-1 hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 sm:inline dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
-          Esc
-        </kbd>
+        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+        Back to Priority Queue
       </button>
 
       {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+        <div className="flex flex-wrap items-center gap-3">
           <MethodBadge method={issue.method} />
-          <span className="break-all font-mono text-base font-semibold text-slate-900 dark:text-slate-100">{issue.path}</span>
-          <SeverityBadge severity={issue.severity} />
-          <AreaBadge area={issue.area} />
-          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            {ISSUE_TYPE_LABELS[issue.issueType]}
-          </span>
+          <span className="font-mono text-xl font-black text-slate-900 dark:text-white tracking-tight">{issue.path}</span>
+          <div className="flex items-center gap-2 ml-auto">
+            <SeverityBadge severity={issue.severity} />
+            <AreaBadge area={issue.area} />
+          </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-y-3 border-t border-slate-100 pt-4 sm:grid-cols-4 sm:divide-x sm:divide-slate-100 dark:border-slate-800 dark:sm:divide-slate-800">
-          <div className="px-4 first:pl-0">
-            <div className="text-xs text-slate-400 dark:text-slate-500">Traffic (7d)</div>
-            <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{issue.traffic7d.toLocaleString()} requests</div>
+        <div className="mt-6 grid grid-cols-2 gap-6 border-t border-slate-100 pt-6 sm:grid-cols-4 dark:border-slate-800">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Traffic (7d)</div>
+            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{issue.traffic7d.toLocaleString()} reqs</div>
           </div>
-          <div className="px-4">
-            <div className="text-xs text-slate-400 dark:text-slate-500">Last seen</div>
-            <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatRelativeTime(issue.lastSeenMinutesAgo)}</div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Last seen</div>
+            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{formatRelativeTime(issue.lastSeenMinutesAgo)}</div>
           </div>
-          <div className="px-4">
-            <div className="text-xs text-slate-400 dark:text-slate-500">Auth method</div>
-            <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{issue.authMethod}</div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Authentication</div>
+            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white truncate" title={issue.authMethod}>{issue.authMethod}</div>
           </div>
-          <div className="px-4">
-            <div className="text-xs text-slate-400 dark:text-slate-500">Error rate</div>
-            <div className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{issue.errorRate}%</div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Error rate</div>
+            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{issue.errorRate}%</div>
           </div>
         </div>
       </div>
 
       {/* Risk rationale */}
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Why this matters</h2>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{issue.rationale}</p>
+      <div className="mt-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:100ms] dark:border-slate-800/60 dark:bg-slate-900/50">
+        <h2 className="text-sm font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">Analysis Rationale</h2>
+        <p className="text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">{issue.rationale}</p>
 
-        <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-4">
           {[
             { label: "Issue type", value: risk.issueTypeScore, max: 40 },
             { label: "Area sensitivity", value: risk.areaScore, max: 30 },
@@ -88,32 +82,32 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
             { label: "Recency", value: risk.recencyScore, max: 10 },
           ].map((f) => (
             <div key={f.label}>
-              <div className="flex items-baseline justify-between text-xs text-slate-400 dark:text-slate-500">
+              <div className="flex items-baseline justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">
                 <span>{f.label}</span>
-                <span className="font-mono text-slate-500 dark:text-slate-400">
+                <span className="font-mono text-slate-900 dark:text-white">
                   {f.value}/{f.max}
                 </span>
               </div>
-              <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800">
-                <div
-                  className="h-1.5 rounded-full bg-slate-900 transition-[width] duration-500 ease-out dark:bg-indigo-500"
-                  style={{ width: `${(f.value / f.max) * 100}%` }}
+              <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div 
+                  className="h-full rounded-full bg-indigo-600 transition-all duration-1000 ease-out" 
+                  style={{ width: `${(f.value / f.max) * 100}%` }} 
                 />
               </div>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-[11px] text-slate-400 dark:text-slate-500">
-          Risk score is additive and shown in full so the ranking can be audited, not just trusted.
-        </p>
       </div>
 
       {/* Spec vs observed */}
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Spec expects</h3>
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 animate-slide-up [animation-delay:200ms]">
+        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Expected Specification</h3>
+          </div>
           {issue.specSnippet ? (
-            <div className="mt-3 space-y-1.5 font-mono text-xs">
+            <div className="space-y-2 font-mono text-xs">
               {Object.entries(issue.specSnippet).map(([k, v]) =>
                 typeof v === "object" && v !== null ? (
                   Object.entries(v as Record<string, unknown>).map(([fk, fv]) => (
@@ -125,16 +119,19 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
               )}
             </div>
           ) : (
-            <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500">
-              This endpoint does not appear in the specification at all.
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
+              Not found in specification
             </div>
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Observed in traffic</h3>
+        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Live Traffic Observation</h3>
+          </div>
           {issue.observedSnippet ? (
-            <div className="mt-3 space-y-1.5 font-mono text-xs">
+            <div className="space-y-2 font-mono text-xs">
               {Object.entries(issue.observedSnippet).map(([k, v]) =>
                 typeof v === "object" && v !== null ? (
                   Object.entries(v as Record<string, unknown>).map(([fk, fv]) => (
@@ -146,20 +143,21 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
               )}
             </div>
           ) : (
-            <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-center text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-500">
-              No requests matching this endpoint were seen in the last 7 days.
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
+              No traffic observed
             </div>
           )}
         </div>
       </div>
 
       {issue.fieldDiffs.some((d) => d.status === "mismatch" && d.note) && (
-        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+        <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs font-bold text-amber-700 dark:text-amber-400 animate-slide-up [animation-delay:250ms]">
           {issue.fieldDiffs
             .filter((d) => d.status === "mismatch" && d.note)
             .map((d) => (
-              <p key={d.field}>
-                <span className="font-semibold">{d.field}:</span> {d.note}
+              <p key={d.field} className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                <span><span className="uppercase text-[9px] tracking-widest opacity-60 mr-1">{d.field}:</span> {d.note}</span>
               </p>
             ))}
         </div>
@@ -167,21 +165,21 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
 
       {/* Evidence */}
       {(issue.sampleRequestBody || issue.sampleResponseBody) && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Evidence: sample traffic</h3>
-          <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="mt-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Traffic Evidence</h3>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {issue.sampleRequestBody && (
               <div>
-                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Request body</div>
-                <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 dark:bg-black/40">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Request Trace</div>
+                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 font-mono text-[11px] text-indigo-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
                   {JSON.stringify(issue.sampleRequestBody, null, 2)}
                 </pre>
               </div>
             )}
             {issue.sampleResponseBody && (
               <div>
-                <div className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Response body</div>
-                <pre className="overflow-x-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100 dark:bg-black/40">
+                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Response Trace</div>
+                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 font-mono text-[11px] text-emerald-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
                   {JSON.stringify(issue.sampleResponseBody, null, 2)}
                 </pre>
               </div>
@@ -191,14 +189,19 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
       )}
 
       {/* Actions */}
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">What should happen next?</h3>
-          <span className="text-xs text-slate-400 dark:text-slate-500">
-            Suggested: <ActionBadge action={issue.recommendedAction} />
-          </span>
+      <div className="mt-6 rounded-2xl border border-slate-200/60 bg-indigo-600/5 p-6 glass shadow-xl animate-slide-up [animation-delay:400ms] dark:border-indigo-500/10 mb-20">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Determination</h3>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Select the resolution path for this issue</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recommended:</span>
+            <ActionBadge action={issue.recommendedAction} />
+          </div>
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {ACTIONS.map(({ action, icon: Icon, helper }) => {
             const isSuggested = action === issue.recommendedAction;
             const isChosen = resolvedAction === action;
@@ -206,26 +209,30 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
               <button
                 key={action}
                 onClick={() => setResolvedAction(action)}
-                aria-pressed={isChosen}
-                className={`rounded-lg border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:focus-visible:outline-indigo-400 ${
+                className={`group relative rounded-xl border p-4 text-left transition-all duration-300 hover-lift ${
                   isChosen
-                    ? "border-slate-900 bg-slate-900 text-white dark:border-indigo-500 dark:bg-indigo-600"
+                    ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40"
                     : isSuggested
-                      ? "border-slate-300 bg-slate-50 dark:border-slate-600 dark:bg-slate-800"
-                      : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                      ? "border-indigo-200 bg-white dark:border-indigo-900/50 dark:bg-slate-900/50"
+                      : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50"
                 }`}
               >
-                <Icon className={`h-4 w-4 ${isChosen ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                <div className={`mt-2 text-sm font-semibold ${isChosen ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>{ACTION_LABELS[action]}</div>
-                <div className={`mt-1 text-[11px] leading-snug ${isChosen ? "text-slate-300" : "text-slate-500 dark:text-slate-400"}`}>{helper}</div>
+                <Icon className={`h-5 w-5 mb-3 transition-colors ${isChosen ? "text-white" : "text-indigo-500"}`} />
+                <div className={`text-sm font-bold mb-1 ${isChosen ? "text-white" : "text-slate-900 dark:text-white"}`}>
+                  {ACTION_LABELS[action]}
+                </div>
+                <div className={`text-[10px] font-medium leading-tight ${isChosen ? "text-indigo-100" : "text-slate-500 dark:text-slate-400"}`}>
+                  {helper}
+                </div>
               </button>
             );
           })}
         </div>
+        
         {resolvedAction && (
-          <div className="mt-4 flex animate-fade-in items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30">
-            <CircleCheck className="h-4 w-4" />
-            Marked as "{ACTION_LABELS[resolvedAction]}". This issue moves out of the active priority queue.
+          <div className="mt-6 flex animate-scale-up items-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
+            <CircleCheck className="h-5 w-5" />
+            Resolution recorded: {ACTION_LABELS[resolvedAction]}
           </div>
         )}
       </div>

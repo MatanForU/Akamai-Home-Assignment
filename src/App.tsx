@@ -34,30 +34,41 @@ function App() {
   }, [selectedId]);
 
   return (
-    <div className="min-h-screen bg-slate-50 transition-colors dark:bg-slate-950">
+    <div className="min-h-screen bg-[var(--background)] transition-colors duration-500">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-slate-900 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-indigo-600 focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-slate-800 dark:bg-slate-950/80">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-2 rounded-lg bg-slate-900 p-1.5 dark:bg-indigo-600">
-            <ShieldCheck className="h-4 w-4 text-white" />
+      <header className="sticky top-0 z-40 border-b border-slate-200/60 glass dark:border-slate-800/60 transition-all">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
+              <ShieldCheck className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white leading-none">
+                Sentinel<span className="text-indigo-600">AI</span>
+              </div>
+              <div className="mt-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
+                Spec Auditor
+              </div>
+            </div>
           </div>
-          <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">API Spec Comparison</span>
-          <span className="hidden text-sm text-slate-300 sm:inline dark:text-slate-700">/</span>
-          <span className="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">
-            {selectedIssue ? "Investigation" : "Overview"}
-          </span>
+          
+          <div className="hidden sm:flex items-center gap-3 ml-8 border-l border-slate-200 dark:border-slate-800 pl-8">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-700">Scope</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+              {selectedIssue ? "Deep Investigation" : "Fleet Overview"}
+            </span>
+          </div>
+
           <button
             onClick={() => setDark(!dark)}
-            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-            aria-pressed={dark}
-            className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100 dark:focus-visible:outline-indigo-400"
+            className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-105 active:scale-95"
           >
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {dark ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-600" />}
           </button>
         </div>
       </header>

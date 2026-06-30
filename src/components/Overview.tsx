@@ -82,59 +82,71 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-      <div className="mb-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-slide-up">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Spec vs. Traffic Comparison</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {SPEC_META.name} &middot; uploaded {SPEC_META.uploadedAt} &middot; compared against {SPEC_META.windowLabel.toLowerCase()} of production traffic
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Spec <span className="text-indigo-600">vs</span> Traffic
+          </h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
+            Comparing <span className="text-slate-900 dark:text-slate-200 font-bold">{SPEC_META.name}</span> against {SPEC_META.windowLabel.toLowerCase()} of production traffic
           </p>
         </div>
         {criticalCount > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700 ring-1 ring-inset ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/30">
+          <div className="flex items-center gap-2 rounded-full glass border-red-500/20 px-4 py-2 text-sm font-bold text-red-600 shadow-sm ring-1 ring-inset ring-red-500/20">
             <AlertTriangle className="h-4 w-4" />
-            {criticalCount} critical issue{criticalCount > 1 ? "s" : ""} need attention
+            {criticalCount} critical issue{criticalCount > 1 ? "s" : ""}
           </div>
         )}
       </div>
 
       {/* Top summary row */}
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="flex items-center gap-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12 animate-slide-up [animation-delay:100ms]">
+        <div className="flex items-center gap-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-4 dark:border-slate-800/60 dark:bg-slate-900/50">
           <MatchScoreRing pct={matchScorePct()} />
           <div>
-            <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Spec match score</div>
-            <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {SPEC_META.matchedEndpoints} of {SPEC_META.totalSpecEndpoints} spec endpoints align with observed traffic.
+            <div className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Compliance</div>
+            <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
+              {SPEC_META.matchedEndpoints} / {SPEC_META.totalSpecEndpoints}
             </div>
-            <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{SPEC_META.totalObservedEndpoints} endpoints observed in traffic.</div>
+            <div className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              endpoints align with observed traffic signatures.
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-5">
-          {ISSUE_TYPES.map((t) => (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-5">
+          {ISSUE_TYPES.map((t, idx) => (
             <button
               key={t}
               onClick={() => setTypeFilter(typeFilter === t ? null : t)}
-              aria-pressed={typeFilter === t}
-              className={`rounded-xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:focus-visible:outline-indigo-400 ${
+              className={`rounded-2xl border p-5 text-left transition-all duration-300 hover-lift ${
                 typeFilter === t
-                  ? "border-slate-900 bg-slate-900 text-white dark:border-indigo-500 dark:bg-indigo-600"
-                  : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700"
+                  ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20"
+                  : "border-slate-200 bg-white glass hover:border-indigo-300 dark:border-slate-800 dark:hover:border-indigo-900"
               }`}
+              style={{ animationDelay: `${(idx + 2) * 50}ms` }}
             >
-              <div className={`text-2xl font-bold ${typeFilter === t ? "text-white" : "text-slate-900 dark:text-slate-100"}`}>{counts.get(t)}</div>
-              <div className={`mt-1 text-xs leading-snug ${typeFilter === t ? "text-slate-300" : "text-slate-500 dark:text-slate-400"}`}>{ISSUE_TYPE_LABELS[t]}</div>
+              <div className={`text-3xl font-black ${typeFilter === t ? "text-white" : "text-slate-900 dark:text-white"}`}>
+                {counts.get(t)}
+              </div>
+              <div className={`mt-2 text-[10px] font-bold uppercase tracking-wider ${typeFilter === t ? "text-indigo-100" : "text-slate-500 dark:text-slate-400"}`}>
+                {ISSUE_TYPE_LABELS[t]}
+              </div>
             </button>
           ))}
         </div>
       </div>
 
       {/* Risk heatmap by area */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Risk by area</h2>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Click an area to focus the priority queue below.</p>
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-8 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass animate-slide-up [animation-delay:200ms] dark:border-slate-800/60 dark:bg-slate-900/50">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Risk Exposure by Area</h2>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Select an area to focus priorities</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {AREAS.map((area) => {
             const areaIssues = issues.filter((i) => i.area === area);
             const risk = areaRiskLabel(areaIssues);
@@ -143,19 +155,23 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
               <button
                 key={area}
                 onClick={() => setAreaFilter(areaFilter === area ? null : area)}
-                aria-pressed={isActive}
-                className={`rounded-lg border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 dark:focus-visible:outline-indigo-400 ${
+                className={`group relative rounded-xl border p-5 text-left transition-all duration-300 hover-lift ${
                   isActive
-                    ? "border-slate-900 ring-1 ring-slate-900 dark:border-indigo-500 dark:ring-indigo-500"
-                    : "border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
+                    ? "border-indigo-600 ring-2 ring-indigo-600/10 bg-indigo-50/30 dark:bg-indigo-950/20"
+                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{area}</span>
-                  <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${risk.classes}`}>{risk.label}</span>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{area}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter ${risk.classes}`}>
+                    {risk.label}
+                  </span>
                 </div>
-                <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  {areaIssues.length} issue{areaIssues.length === 1 ? "" : "s"}
+                <div className="text-2xl font-black text-slate-900 dark:text-white">
+                  {areaIssues.length}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Issues
                 </div>
               </button>
             );
@@ -164,135 +180,125 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
       </div>
 
       {/* Priority queue */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+      <div className="mt-8 rounded-2xl border border-slate-200/60 bg-white/50 glass shadow-xl animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
+        <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Priority queue</h2>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Ranked by combined risk: issue type, area sensitivity, traffic volume, recency.</p>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Priority Queue</h2>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">AI-ranked issues by severity, traffic, and risk</p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by path&hellip;"
-                aria-label="Search by endpoint path"
-                className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-7 text-xs text-slate-700 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/20 sm:w-56 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:border-slate-500"
+                placeholder="Search endpoints..."
+                className="w-full rounded-xl border border-slate-200 bg-white/50 py-2.5 pl-10 pr-10 text-sm font-medium transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white sm:w-64"
               />
               {query && (
                 <button
                   onClick={() => setQuery("")}
-                  aria-label="Clear search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
-                className="whitespace-nowrap text-xs font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                className="rounded-xl px-4 py-2.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors dark:text-indigo-400 dark:hover:bg-indigo-950/30"
               >
-                Clear filters
+                Reset
               </button>
             )}
           </div>
         </div>
+        
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-left">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-xs font-medium text-slate-400 dark:border-slate-800 dark:text-slate-500">
-                <th className="px-5 py-2 font-medium">Endpoint</th>
-                <th className="px-5 py-2 font-medium">Area</th>
-                <th className="px-5 py-2 font-medium">Issue</th>
+              <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-900/30">
+                <th className="px-6 py-4">Endpoint</th>
+                <th className="px-6 py-4">Area</th>
+                <th className="px-6 py-4">Issue Type</th>
                 {SORT_COLUMNS.map((col) => (
-                  <th key={col.key} className="px-5 py-2 font-medium">
+                  <th key={col.key} className="px-6 py-4">
                     <button
                       onClick={() => toggleSort(col.key)}
-                      className="flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-300"
+                      className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-white"
                     >
                       {col.label}
                       {sortKey === col.key ? (
-                        sortDir === "desc" ? (
-                          <ArrowDown className="h-3 w-3" />
-                        ) : (
-                          <ArrowUp className="h-3 w-3" />
-                        )
+                        sortDir === "desc" ? <ArrowDown className="h-3 w-3 text-indigo-500" /> : <ArrowUp className="h-3 w-3 text-indigo-500" />
                       ) : (
                         <ArrowUpDown className="h-3 w-3 opacity-30" />
                       )}
                     </button>
                   </th>
                 ))}
-                <th className="px-5 py-2 font-medium">Suggested action</th>
-                <th />
+                <th className="px-6 py-4 text-right">Action</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
               {filtered.map((issue) => (
                 <tr
                   key={issue.id}
                   onClick={() => onSelectIssue(issue.id)}
-                  tabIndex={0}
-                  role="button"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onSelectIssue(issue.id);
-                    }
-                  }}
-                  className="cursor-pointer border-b border-slate-50 transition-colors last:border-0 hover:bg-slate-50 focus-visible:bg-slate-50 focus-visible:outline-none dark:border-slate-800/60 dark:hover:bg-slate-800/50 dark:focus-visible:bg-slate-800/50"
+                  className="group cursor-pointer transition-all hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10"
                 >
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
                       <MethodBadge method={issue.method} />
-                      <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{issue.path}</span>
+                      <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">
+                        {issue.path}
+                      </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4">
                     <AreaBadge area={issue.area} />
                   </td>
-                  <td className="px-5 py-3 text-xs text-slate-600 dark:text-slate-400">{ISSUE_TYPE_LABELS[issue.issueType]}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-6 py-4 font-bold text-slate-500 dark:text-slate-400 text-[11px]">
+                    {ISSUE_TYPE_LABELS[issue.issueType]}
+                  </td>
+                  <td className="px-6 py-4">
                     <SeverityBadge severity={issue.severity} />
                   </td>
-                  <td className="px-5 py-3 text-xs tabular-nums text-slate-600 dark:text-slate-400">{issue.traffic7d.toLocaleString()}</td>
-                  <td className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400">{formatRelativeTime(issue.lastSeenMinutesAgo)}</td>
-                  <td className="px-5 py-3">
-                    <ActionBadge action={issue.recommendedAction} />
+                  <td className="px-6 py-4 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                    {issue.traffic7d.toLocaleString()}
                   </td>
-                  <td className="px-3 py-3 text-slate-300 dark:text-slate-600">
-                    <ChevronRight className="h-4 w-4" />
+                  <td className="px-6 py-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    {formatRelativeTime(issue.lastSeenMinutesAgo)}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      <ActionBadge action={issue.recommendedAction} />
+                      <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-500" />
+                    </div>
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2 text-slate-400 dark:text-slate-500">
-                      <SearchX className="h-6 w-6" />
-                      <span className="text-sm">No issues match the current filters.</span>
-                      {hasActiveFilters && (
-                        <button onClick={clearAllFilters} className="text-xs font-medium text-slate-500 underline hover:text-slate-900 dark:hover:text-slate-200">
-                          Clear filters
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
+          
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400 bg-white/50 dark:bg-slate-900/50">
+              <SearchX className="h-10 w-10 mb-4 opacity-20" />
+              <p className="text-sm font-bold uppercase tracking-widest">No results found</p>
+              <button onClick={clearAllFilters} className="mt-2 text-xs font-bold text-indigo-500 hover:underline">
+                Clear all filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
-        {filtered.length} of {issues.length} issues shown &middot; sorted by {sortKey === "risk" ? "risk" : SORT_COLUMNS.find((c) => c.key === sortKey)?.label.toLowerCase()} &middot;{" "}
-        {ACTION_LABELS.investigate} actions require analyst review
-      </p>
+      <footer className="mt-12 text-center">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+          Showing {filtered.length} of {issues.length} detected patterns &middot; AI risk-scoring engine v4.2
+        </p>
+      </footer>
     </div>
   );
 }
