@@ -1,0 +1,20 @@
+{
+  "name": "akamai-home-assignment",
+  "version": "1.0.0",
+  "description": "A TypeScript/Node.js project built as part of the Akamai home assignment.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"No tests specified yet\" && exit 0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}
