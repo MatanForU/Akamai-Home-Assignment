@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, CircleCheck, FileEdit, MessageSquareWarning, SearchCheck } from "lucide-react";
 import type { DiffStatus, Issue, RecommendedAction } from "../lib/types";
 import { computeRisk } from "../lib/scoring";
-import { ACTION_LABELS, formatRelativeTime, ISSUE_TYPE_LABELS } from "../lib/scoring";
+import { ACTION_LABELS, formatRelativeTime } from "../lib/scoring";
 import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
 
 const DIFF_STYLES: Record<DiffStatus, string> = {
@@ -24,6 +24,8 @@ const ACTIONS: { action: RecommendedAction; icon: typeof SearchCheck; helper: st
   { action: "update_spec", icon: FileEdit, helper: "Traffic reflects intended, legitimate behavior — update the spec to match it." },
   { action: "notify_dev", icon: MessageSquareWarning, helper: "Ownership or intent is unclear — ask the owning team to confirm before deciding." },
   { action: "no_action", icon: CircleCheck, helper: "Low-risk drift, deprecated endpoint, or already-known issue. Dismiss for now." },
+];
+
 export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => void }) {
   const [resolvedAction, setResolvedAction] = useState<RecommendedAction | null>(null);
   const risk = computeRisk(issue.issueType, issue.area, issue.traffic7d, issue.lastSeenMinutesAgo);

@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 
 export function MatchScoreRing({ pct }: { pct: number }) {
   const radius = 54;

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Search, SearchX, X } from "lucide-react";
 import type { Area, Issue, IssueType } from "../lib/types";
 import { AREAS, SPEC_META, issues, matchScorePct } from "../lib/mockData";
-import { ACTION_LABELS, formatRelativeTime, ISSUE_TYPE_LABELS, SEVERITY_ORDER } from "../lib/scoring";
+import { formatRelativeTime, ISSUE_TYPE_LABELS, SEVERITY_ORDER } from "../lib/scoring";
 import { MatchScoreRing } from "./MatchScoreRing";
 import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
 
