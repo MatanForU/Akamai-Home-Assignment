@@ -85,15 +85,10 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-slide-up">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Spec <span className="text-indigo-600">vs</span> Traffic
-          </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
-            Comparing <span className="text-slate-900 dark:text-slate-200 font-bold">{SPEC_META.name}</span> against {SPEC_META.windowLabel.toLowerCase()} of production traffic
-          </p>
-        </div>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-up">
+        <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+          Comparing <span className="text-slate-900 dark:text-slate-200 font-bold">{SPEC_META.name}</span> against {SPEC_META.windowLabel.toLowerCase()} of production traffic
+        </p>
         {criticalCount > 0 && (
           <div className="flex items-center gap-2 rounded-full glass border-red-500/20 px-4 py-2 text-sm font-bold text-red-600 shadow-sm ring-1 ring-inset ring-red-500/20">
             <AlertTriangle className="h-4 w-4" />
@@ -104,38 +99,46 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
 
       {/* Top summary row */}
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12 animate-slide-up [animation-delay:100ms]">
-        <div className="flex items-center gap-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-4 dark:border-slate-800/60 dark:bg-slate-900/50">
+        <div className="flex items-center gap-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-900/50">
           <MatchScoreRing pct={matchScorePct()} />
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">Compliance</div>
-            <div className="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
+            <div className="text-sm font-semibold text-slate-900 dark:text-white">Spec vs Traffic</div>
+            <div className="mt-1 text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 leading-tight">
               {SPEC_META.matchedEndpoints} / {SPEC_META.totalSpecEndpoints}
             </div>
-            <div className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="mt-2 max-w-[15rem] text-xs font-medium text-slate-500 dark:text-slate-400">
               endpoints align with observed traffic signatures.
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-8 lg:grid-cols-5">
-          {ISSUE_TYPES.map((t, idx) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(typeFilter === t ? null : t)}
-              className="text-left transition-all duration-300 hover-lift"
-              style={{
-                animationDelay: `${(idx + 2) * 50}ms`,
-                borderRadius: "var(--radius-lg)",
-                outline: typeFilter === t ? "2px solid var(--accent-primary)" : "2px solid transparent",
-                outlineOffset: 2,
-              }}
-            >
-              <StatCard
-                label={ISSUE_TYPE_LABELS[t]}
-                value={counts.get(t) ?? 0}
-              />
-            </button>
-          ))}
+        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-7 dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="mb-4">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Anomaly types</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {issues.length} issues found in observed traffic, independent of the match score
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {ISSUE_TYPES.map((t, idx) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(typeFilter === t ? null : t)}
+                className="flex flex-col text-left transition-all duration-300 hover-lift"
+                style={{
+                  animationDelay: `${(idx + 2) * 50}ms`,
+                  borderRadius: "var(--radius-lg)",
+                  outline: typeFilter === t ? "2px solid var(--accent-primary)" : "2px solid transparent",
+                  outlineOffset: 2,
+                }}
+              >
+                <StatCard
+                  label={ISSUE_TYPE_LABELS[t]}
+                  value={counts.get(t) ?? 0}
+                />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

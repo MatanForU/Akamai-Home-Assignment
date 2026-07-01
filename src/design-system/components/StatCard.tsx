@@ -21,10 +21,11 @@ export function StatCard({ label, value, delta, deltaTone = "success", sparkline
         flexDirection: "column",
         gap: 10,
         fontFamily: "var(--font-sans)",
-        minWidth: 160,
+        width: "100%",
+        height: "100%",
       }}
     >
-      <span style={{ font: "var(--text-overline)", letterSpacing: "var(--tracking-overline)", color: "var(--fg-tertiary)", textTransform: "uppercase" }}>{label}</span>
+      <span style={{ font: "var(--text-overline)", letterSpacing: "var(--tracking-overline)", color: "var(--fg-tertiary)", textTransform: "uppercase", minHeight: 29 }}>{label}</span>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ font: "var(--text-mono-stat)", color: "var(--fg-primary)" }}>{value}</span>
         {unit && <span style={{ font: "var(--text-body-sm)", color: "var(--fg-tertiary)" }}>{unit}</span>}
