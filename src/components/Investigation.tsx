@@ -3,7 +3,9 @@ import { ArrowLeft, CircleCheck, FileEdit, MessageSquareWarning, SearchCheck } f
 import type { DiffStatus, Issue, RecommendedAction } from "../lib/types";
 import { computeRisk } from "../lib/scoring";
 import { ACTION_LABELS, formatRelativeTime } from "../lib/scoring";
-import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
+import { ActionBadge, AreaBadge, MethodBadge } from "./Badges";
+import { AlertCard } from "../design-system/components/AlertCard";
+import { Button } from "../design-system/components/Button";
 
 const DIFF_STYLES: Record<DiffStatus, string> = {
   extra: "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300",
@@ -31,45 +33,24 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
   const risk = computeRisk(issue.issueType, issue.area, issue.traffic7d, issue.lastSeenMinutesAgo);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-slide-in-right">
-      <button 
-        onClick={onBack} 
-        className="group mb-6 flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
-      >
-        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-        Back to Priority Queue
-      </button>
+    <div className="px-6 py-6">
+      <Button variant="ghost" size="sm" iconLeft={<ArrowLeft size={14} />} onClick={onBack} style={{ marginBottom: 24 }}>
+        Close
+      </Button>
 
       {/* Header */}
-      <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-        <div className="flex flex-wrap items-center gap-3">
-          <MethodBadge method={issue.method} />
-          <span className="font-mono text-xl font-black text-slate-900 dark:text-white tracking-tight">{issue.path}</span>
-          <div className="flex items-center gap-2 ml-auto">
-            <SeverityBadge severity={issue.severity} />
-            <AreaBadge area={issue.area} />
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-6 border-t border-slate-100 pt-6 sm:grid-cols-4 dark:border-slate-800">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Traffic (7d)</div>
-            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{issue.traffic7d.toLocaleString()} reqs</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Last seen</div>
-            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{formatRelativeTime(issue.lastSeenMinutesAgo)}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Authentication</div>
-            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white truncate" title={issue.authMethod}>{issue.authMethod}</div>
-          </div>
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Error rate</div>
-            <div className="mt-1 text-sm font-bold text-slate-900 dark:text-white">{issue.errorRate}%</div>
-          </div>
-        </div>
-      </div>
+      <AlertCard
+        severity={issue.severity}
+        title={
+          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <MethodBadge method={issue.method} />
+            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 800 }}>{issue.path}</span>
+          </span>
+        }
+        meta={`Traffic: ${issue.traffic7d.toLocaleString()} reqs (7d)  ·  Auth: ${issue.authMethod}  ·  Error rate: ${issue.errorRate}%`}
+        timestamp={formatRelativeTime(issue.lastSeenMinutesAgo)}
+        actions={<AreaBadge area={issue.area} />}
+      />
 
       {/* Risk rationale */}
       <div className="mt-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:100ms] dark:border-slate-800/60 dark:bg-slate-900/50">
@@ -203,30 +184,23 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
           </div>
         </div>
         
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
           {ACTIONS.map(({ action, icon: Icon, helper }) => {
             const isSuggested = action === issue.recommendedAction;
             const isChosen = resolvedAction === action;
             return (
-              <button
-                key={action}
-                onClick={() => setResolvedAction(action)}
-                className={`group relative rounded-xl border p-4 text-left transition-all duration-300 hover-lift ${
-                  isChosen
-                    ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40"
-                    : isSuggested
-                      ? "border-indigo-200 bg-white dark:border-indigo-900/50 dark:bg-slate-900/50"
-                      : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50"
-                }`}
-              >
-                <Icon className={`h-5 w-5 mb-3 transition-colors ${isChosen ? "text-white" : "text-indigo-500"}`} />
-                <div className={`text-sm font-bold mb-1 ${isChosen ? "text-white" : "text-slate-900 dark:text-white"}`}>
+              <div key={action} style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <Button
+                  variant={isChosen ? "primary" : isSuggested ? "secondary" : "ghost"}
+                  size="lg"
+                  iconLeft={<Icon size={16} />}
+                  onClick={() => setResolvedAction(action)}
+                  style={{ width: "100%", justifyContent: "flex-start", borderRadius: "var(--radius-md)" }}
+                >
                   {ACTION_LABELS[action]}
-                </div>
-                <div className={`text-[10px] font-medium leading-tight ${isChosen ? "text-indigo-100" : "text-slate-500 dark:text-slate-400"}`}>
-                  {helper}
-                </div>
-              </button>
+                </Button>
+                <p style={{ font: "var(--text-caption)", color: "var(--fg-tertiary)", paddingLeft: 4, margin: 0 }}>{helper}</p>
+              </div>
             );
           })}
         </div>

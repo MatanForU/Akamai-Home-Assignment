@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Moon, ShieldCheck, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
+import akamaiLogo from "./assets/akamai-logo.svg";
 import { Overview } from "./components/Overview";
 import { Investigation } from "./components/Investigation";
 import { issues } from "./lib/mockData";
@@ -14,6 +15,7 @@ function useDarkMode() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
@@ -44,24 +46,17 @@ function App() {
       <header className="sticky top-0 z-40 border-b border-slate-200/60 glass dark:border-slate-800/60 transition-all">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
-              <ShieldCheck className="h-6 w-6 text-white" />
-            </div>
+            <img src={akamaiLogo} alt="Akamai logo" className="h-9 w-auto" />
             <div>
               <div className="text-sm font-black uppercase tracking-[0.2em] text-slate-900 dark:text-white leading-none">
-                Sentinel<span className="text-indigo-600">AI</span>
-              </div>
-              <div className="mt-1 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">
-                Spec Auditor
+                Home Assignment
               </div>
             </div>
           </div>
-          
+
           <div className="hidden sm:flex items-center gap-3 ml-8 border-l border-slate-200 dark:border-slate-800 pl-8">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-700">Scope</span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-              {selectedIssue ? "Deep Investigation" : "Fleet Overview"}
-            </span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fleet Overview</span>
           </div>
 
           <button
@@ -74,12 +69,20 @@ function App() {
       </header>
 
       <main id="main">
-        {selectedIssue ? (
-          <Investigation issue={selectedIssue} onBack={() => setSelectedId(null)} />
-        ) : (
-          <Overview onSelectIssue={setSelectedId} />
-        )}
+        <Overview onSelectIssue={setSelectedId} />
       </main>
+
+      {selectedIssue && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-fade-in"
+            onClick={() => setSelectedId(null)}
+          />
+          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-6xl overflow-y-auto bg-[var(--background)] shadow-2xl border-l border-slate-200/60 dark:border-slate-800/60 animate-drawer-slide-in">
+            <Investigation issue={selectedIssue} onBack={() => setSelectedId(null)} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

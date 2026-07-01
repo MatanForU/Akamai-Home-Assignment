@@ -1,19 +1,9 @@
 import type { Area, Severity, IssueType, RecommendedAction } from "../lib/types";
 import { ISSUE_TYPE_LABELS, ACTION_LABELS } from "../lib/scoring";
-
-const SEVERITY_STYLES: Record<Severity, string> = {
-  critical: "bg-red-500/10 text-red-600 ring-1 ring-inset ring-red-500/20 dark:bg-red-500/20 dark:text-red-400",
-  high: "bg-orange-500/10 text-orange-600 ring-1 ring-inset ring-orange-500/20 dark:bg-orange-500/20 dark:text-orange-400",
-  medium: "bg-amber-500/10 text-amber-600 ring-1 ring-inset ring-amber-500/20 dark:bg-amber-500/20 dark:text-amber-400",
-  low: "bg-slate-500/10 text-slate-600 ring-1 ring-inset ring-slate-500/20 dark:bg-slate-500/20 dark:text-slate-400",
-};
+import { Badge } from "../design-system/components/Badge";
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight ${SEVERITY_STYLES[severity]}`}>
-      {severity}
-    </span>
-  );
+  return <Badge tone={severity}>{severity}</Badge>;
 }
 
 const AREA_DOT: Record<Area, string> = {

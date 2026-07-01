@@ -5,6 +5,8 @@ import { AREAS, SPEC_META, issues, matchScorePct } from "../lib/mockData";
 import { formatRelativeTime, ISSUE_TYPE_LABELS, SEVERITY_ORDER } from "../lib/scoring";
 import { MatchScoreRing } from "./MatchScoreRing";
 import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
+import { StatCard } from "../design-system/components/StatCard";
+import { Input } from "../design-system/components/Input";
 
 const ISSUE_TYPES: IssueType[] = ["shadow_api", "param_undocumented", "param_unused", "param_mismatch", "spec_only"];
 
@@ -120,19 +122,18 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
             <button
               key={t}
               onClick={() => setTypeFilter(typeFilter === t ? null : t)}
-              className={`rounded-2xl border p-5 text-left transition-all duration-300 hover-lift ${
-                typeFilter === t
-                  ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20"
-                  : "border-slate-200 bg-white glass hover:border-indigo-300 dark:border-slate-800 dark:hover:border-indigo-900"
-              }`}
-              style={{ animationDelay: `${(idx + 2) * 50}ms` }}
+              className="text-left transition-all duration-300 hover-lift"
+              style={{
+                animationDelay: `${(idx + 2) * 50}ms`,
+                borderRadius: "var(--radius-lg)",
+                outline: typeFilter === t ? "2px solid var(--accent-primary)" : "2px solid transparent",
+                outlineOffset: 2,
+              }}
             >
-              <div className={`text-3xl font-black ${typeFilter === t ? "text-white" : "text-slate-900 dark:text-white"}`}>
-                {counts.get(t)}
-              </div>
-              <div className={`mt-2 text-[10px] font-bold uppercase tracking-wider ${typeFilter === t ? "text-indigo-100" : "text-slate-500 dark:text-slate-400"}`}>
-                {ISSUE_TYPE_LABELS[t]}
-              </div>
+              <StatCard
+                label={ISSUE_TYPE_LABELS[t]}
+                value={counts.get(t) ?? 0}
+              />
             </button>
           ))}
         </div>
@@ -187,19 +188,17 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">AI-ranked issues by severity, traffic, and risk</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 transition-colors group-focus-within:text-indigo-500" />
-              <input
-                type="text"
+            <div className="relative" style={{ width: 256 }}>
+              <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search endpoints..."
-                className="w-full rounded-xl border border-slate-200 bg-white/50 py-2.5 pl-10 pr-10 text-sm font-medium transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800/50 dark:text-white sm:w-64"
+                icon={<Search size={15} />}
               />
               {query && (
                 <button
                   onClick={() => setQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
                 >
                   <X className="h-4 w-4" />
                 </button>
