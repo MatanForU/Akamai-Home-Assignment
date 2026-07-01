@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Filter, Search, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, Check, Filter, Search, SearchX, X } from "lucide-react";
 import type { Area, Issue, Severity } from "../lib/types";
 import { AREAS, SPEC_META, issues, matchScorePct } from "../lib/mockData";
 import { formatRelativeTime, ISSUE_TYPE_LABELS, SEVERITY_ORDER } from "../lib/scoring";
@@ -29,13 +29,90 @@ function areaRiskLabel(areaIssues: Issue[]): { label: string; classes: string; c
   return { label: "Low", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", color: "var(--sev-low-500)" };
 }
 
+interface SelectionOptionsProps<T extends string> {
+  value: T | null;
+  onChange: (value: T | null) => void;
+  options: readonly T[] | T[];
+  placeholder: string;
+  labelFormatter?: (value: T) => string;
+}
+
+function SelectionOptions<T extends string>({
+  value,
+  onChange,
+  options,
+  placeholder,
+  labelFormatter,
+}: SelectionOptionsProps<T>) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const displayLabel = value ? (labelFormatter ? labelFormatter(value) : value) : placeholder;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-control)] border pl-3.5 pr-5 py-2 text-xs font-medium transition-all duration-250 select-none min-w-[140px] ${
+          value
+            ? "border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500/50 dark:bg-indigo-950/30 dark:text-indigo-400"
+            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/50"
+        }`}
+      >
+        <span className="truncate">{displayLabel}</span>
+        <ChevronDown className={`h-3.5 w-3.5 text-slate-400 transition-transform duration-250 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 mt-1.5 z-40 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-up dark:border-slate-800 dark:bg-slate-900">
+            <button
+              type="button"
+              onClick={() => {
+                onChange(null);
+                setIsOpen(false);
+              }}
+              className="flex w-full cursor-pointer items-center justify-between px-3.5 py-2 text-left text-xs font-medium text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+            >
+              <span>{placeholder}</span>
+              {!value && <Check className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />}
+            </button>
+            {options.map((opt) => {
+              const label = labelFormatter ? labelFormatter(opt) : opt;
+              const isSelected = value === opt;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full cursor-pointer items-center justify-between px-3.5 py-2 text-left text-xs font-medium transition-colors ${
+                    isSelected
+                      ? "bg-indigo-50/50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400"
+                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
+                  }`}
+                >
+                  <span>{label}</span>
+                  {isSelected && <Check className="h-3 w-3 text-indigo-600 dark:text-indigo-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => void }) {
   const [areaFilter, setAreaFilter] = useState<Area | null>(null);
   const [severityFilter, setSeverityFilter] = useState<Severity | null>(null);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("risk");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -83,7 +160,6 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
     return stats.map((s) => ({ ...s, barWidthPct: Math.max((s.count / maxCount) * 100, 6) }));
   }, []);
 
-  const activeFilterCount = [areaFilter, severityFilter].filter(Boolean).length;
   const hasActiveFilters = Boolean(areaFilter || severityFilter || query);
 
   const clearAllFilters = () => {
@@ -169,68 +245,26 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
       <h2 className="mt-6 text-lg font-bold text-slate-900 dark:text-white animate-slide-up [animation-delay:300ms]">Endpoints</h2>
       <div className="mt-2 rounded-2xl border border-gray-100 bg-white/50 glass animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-          <div className="relative">
-            <button
-              onClick={() => setFiltersOpen((v) => !v)}
-              className={`flex cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border px-4 py-2.5 text-xs font-medium transition-colors ${
-                activeFilterCount > 0
-                  ? "border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800/50"
-              }`}
-            >
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
               <Filter className="h-3.5 w-3.5" />
-              Filters
-              {activeFilterCount > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+              <span>Filters</span>
+            </div>
 
-            {filtersOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setFiltersOpen(false)} />
-                <div className="absolute left-0 z-20 mt-2 w-64 rounded-[var(--radius-control)] border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                  <div className="mb-3">
-                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Area</label>
-                    <select
-                      value={areaFilter ?? ""}
-                      onChange={(e) => setAreaFilter((e.target.value || null) as Area | null)}
-                      className="w-full cursor-pointer rounded-[var(--radius-control)] border border-slate-200 bg-white py-2 pl-3 pr-10 text-sm font-normal text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                    >
-                      <option value="">All areas</option>
-                      {AREAS.map((a) => (
-                        <option key={a} value={a}>{a}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Severity</label>
-                    <select
-                      value={severityFilter ?? ""}
-                      onChange={(e) => setSeverityFilter((e.target.value || null) as Severity | null)}
-                      className="w-full cursor-pointer rounded-[var(--radius-control)] border border-slate-200 bg-white py-2 pl-3 pr-10 text-sm font-normal text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                    >
-                      <option value="">All severities</option>
-                      {SEVERITY_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {activeFilterCount > 0 && (
-                    <button
-                      onClick={() => {
-                        setAreaFilter(null);
-                        setSeverityFilter(null);
-                      }}
-                      className="mt-3 text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400"
-                    >
-                      Clear filters
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
+            <SelectionOptions
+              value={areaFilter}
+              onChange={setAreaFilter}
+              options={AREAS}
+              placeholder="All areas"
+            />
+
+            <SelectionOptions
+              value={severityFilter}
+              onChange={setSeverityFilter}
+              options={SEVERITY_OPTIONS}
+              placeholder="All severities"
+              labelFormatter={(s) => s[0].toUpperCase() + s.slice(1)}
+            />
           </div>
 
           <div className="flex items-center gap-3">
