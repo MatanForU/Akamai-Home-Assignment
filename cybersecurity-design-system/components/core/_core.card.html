@@ -1,0 +1,51 @@
+<!-- @dsCard group="Components" viewport="720x520" name="Core — Buttons, Badges, Inputs, Toggles" -->
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-canvas);font-family:var(--font-sans)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Input, Select, Checkbox, Radio, Switch, Avatar } = window.DS;
+function Demo(){
+  const [checked, setChecked] = React.useState(true);
+  const [on, setOn] = React.useState(true);
+  return (
+    <div style={{padding:20, display:"flex", flexDirection:"column", gap:16}}>
+      <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+        <Button variant="primary">Run scan</Button>
+        <Button variant="secondary">Export</Button>
+        <Button variant="ghost">Cancel</Button>
+        <Button variant="danger">Revoke key</Button>
+        <Button variant="primary" loading>Scanning</Button>
+        <Button variant="secondary" disabled>Disabled</Button>
+        <IconButton aria-label="More" icon={<span>⋯</span>} />
+      </div>
+      <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+        <Badge tone="critical">Critical</Badge>
+        <Badge tone="high">High</Badge>
+        <Badge tone="medium">Medium</Badge>
+        <Badge tone="low">Low</Badge>
+        <Badge tone="info">Info</Badge>
+        <Badge tone="success">Resolved</Badge>
+      </div>
+      <div style={{display:"flex", gap:12, flexWrap:"wrap", alignItems:"flex-end"}}>
+        <Input label="Search logs" placeholder="method, path, status..." />
+        <Select label="Severity" value="all" options={[{value:"all",label:"All severities"},{value:"critical",label:"Critical"}]} />
+      </div>
+      <div style={{display:"flex", gap:20, alignItems:"center"}}>
+        <Checkbox checked={checked} onChange={setChecked} label="Select all" />
+        <Radio checked label="Realtime" />
+        <Switch checked={on} onChange={setOn} label="Auto-block" />
+        <Avatar name="Priya Shah" size="md" />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body></html>

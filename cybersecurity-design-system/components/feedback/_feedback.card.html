@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="720x360" name="Feedback — Toast, Tooltip, Dialog, Empty State" -->
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-canvas);font-family:var(--font-sans)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Toast, Tooltip, IconButton, EmptyState } = window.DS;
+function Demo(){
+  return (
+    <div style={{padding:20, display:"flex", flexDirection:"column", gap:20}}>
+      <div style={{display:"flex", gap:12, flexWrap:"wrap"}}>
+        <Toast tone="success" title="Policy updated" description="New rule applies to 3 endpoints." />
+        <Toast tone="danger" title="Critical finding" description="Unauthenticated access on /v2/refund." />
+      </div>
+      <div style={{display:"flex", gap:12}}>
+        <Tooltip label="Copy request ID"><IconButton aria-label="Copy" icon={<span>⧉</span>} /></Tooltip>
+      </div>
+      <EmptyState title="No open critical alerts" description="You're all caught up. New findings will appear here." />
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body></html>

@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="740x600" name="Cards — Stat, Alert, Asset, Chart, List" -->
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-canvas);font-family:var(--font-sans)}</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { StatCard, AlertCard, AssetCard, ChartCard, ListCard, Sparkline, LineChart, Button } = window.DS;
+function Demo(){
+  return (
+    <div style={{padding:20, display:"flex", flexDirection:"column", gap:16}}>
+      <div style={{display:"flex", gap:14, flexWrap:"wrap"}}>
+        <StatCard label="Open critical alerts" value="7" delta="-12% vs last week" deltaTone="success" sparkline={<Sparkline values={[9,8,10,7,9,7,7]} />} />
+        <StatCard label="Unprotected endpoints" value="23" delta="+3 this week" deltaTone="danger" sparkline={<Sparkline values={[18,19,20,21,22,20,23]} color="var(--sev-critical-500)" />} />
+      </div>
+      <AlertCard severity="critical" title="Unauthenticated access to /v2/refund" meta="203.0.113.4 · rule: auth-missing-001" timestamp="4m ago" actions={<Button size="sm" variant="secondary">Investigate</Button>} />
+      <div style={{display:"flex", gap:14, flexWrap:"wrap"}}>
+        <AssetCard name="payments-api" type="Internal API" status="warning" endpointCount={18} lastScanned="2h ago" icon={<span>◆</span>} />
+        <AssetCard name="checkout-web" type="Public web app" status="healthy" endpointCount={6} lastScanned="10m ago" icon={<span>◆</span>} />
+      </div>
+      <div style={{display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:14}}>
+        <ChartCard title="Blocked attacks" subtitle="Last 7 days" chart={<LineChart data={[{label:"Mon",value:120},{label:"Tue",value:180},{label:"Wed",value:90},{label:"Thu",value:210},{label:"Fri",value:160}]} width={340} height={140} />} />
+        <ListCard title="Top offending IPs" items={[{label:"203.0.113.4",value:"1,204 reqs"},{label:"198.51.100.9",value:"842 reqs"},{label:"192.0.2.15",value:"390 reqs"}]} />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body></html>

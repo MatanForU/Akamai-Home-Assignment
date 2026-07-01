@@ -1,0 +1,17 @@
+<!-- @dsCard group="Colors" viewport="700x180" subtitle="Critical → info, used across alerts, badges, charts" name="Severity Scale" -->
+<html><head><link rel="stylesheet" href="../styles.css"><style>
+body{margin:0;font-family:var(--font-sans);background:var(--bg-canvas);padding:20px}
+.row{display:flex;gap:8px}
+.sw{flex:1;height:88px;border-radius:var(--radius-sm);display:flex;flex-direction:column;justify-content:space-between;padding:10px;border:1px solid var(--border-subtle)}
+.dot{width:10px;height:10px;border-radius:50%}
+.name{font:var(--text-label);color:var(--fg-primary)}
+</style></head>
+<body>
+<div class="row">
+<div class="sw" style="background:var(--sev-critical-bg)"><span class="dot" style="background:var(--sev-critical)"></span><span class="name">Critical</span></div>
+<div class="sw" style="background:var(--sev-high-bg)"><span class="dot" style="background:var(--sev-high)"></span><span class="name">High</span></div>
+<div class="sw" style="background:var(--sev-medium-bg)"><span class="dot" style="background:var(--sev-medium)"></span><span class="name">Medium</span></div>
+<div class="sw" style="background:var(--sev-low-bg)"><span class="dot" style="background:var(--sev-low)"></span><span class="name">Low</span></div>
+<div class="sw" style="background:var(--sev-info-bg)"><span class="dot" style="background:var(--sev-info)"></span><span class="name">Info</span></div>
+</div>
+</body></html>

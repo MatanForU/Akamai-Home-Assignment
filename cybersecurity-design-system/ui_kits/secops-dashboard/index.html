@@ -1,0 +1,92 @@
+<!-- @dsCard group="SecOps Dashboard" viewport="1280x780" -->
+<!-- @startingPoint section="UI Kits" subtitle="API security / SecOps dashboard — overview, alerts, alert detail, inventory" viewport="1280x780" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Sentra — SecOps Dashboard</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; background: var(--bg-canvas); }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="Overview.jsx"></script>
+<script type="text/babel" src="AlertsScreen.jsx"></script>
+<script type="text/babel" src="AlertDetail.jsx"></script>
+<script type="text/babel" src="ApiInventory.jsx"></script>
+
+<script type="text/babel">
+const { Sidebar, Topbar, IconButton, Icon, Avatar } = window.DS;
+
+function App() {
+  const [theme, setTheme] = React.useState("light");
+  const [screen, setScreen] = React.useState("overview");
+  const [selectedAlert, setSelectedAlert] = React.useState(null);
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
+  const nav = [
+    { value: "overview", label: "Overview", icon: <Icon name="layout-dashboard" size={16} /> },
+    { value: "alerts", label: "Alerts", icon: <Icon name="shield-alert" size={16} />, badge: 12 },
+    { value: "assets", label: "API Inventory", icon: <Icon name="server" size={16} /> },
+    { value: "policies", label: "Policies", icon: <Icon name="lock" size={16} /> },
+  ];
+
+  const titles = { overview: "Overview", alerts: "Alerts", assets: "API Inventory", policies: "Policies" };
+
+  let content;
+  if (screen === "detail") {
+    content = <AlertDetail alert={selectedAlert} onBack={() => setScreen("alerts")} />;
+  } else if (screen === "overview") {
+    content = <Overview />;
+  } else if (screen === "alerts") {
+    content = <AlertsScreen onOpenAlert={(a) => { setSelectedAlert(a); setScreen("detail"); }} />;
+  } else if (screen === "assets") {
+    content = <ApiInventory />;
+  } else {
+    content = <div style={{ padding: 40, font: "var(--text-body)", color: "var(--fg-secondary)" }}>Policies screen — not built for this preview.</div>;
+  }
+
+  return (
+    <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden", fontFamily: "var(--font-sans)" }}>
+      <Sidebar
+        productName="Sentra"
+        activeValue={screen === "detail" ? "alerts" : screen}
+        onSelect={setScreen}
+        items={nav}
+        logo={<Icon name="shield-check" size={20} color="var(--accent-primary)" />}
+      />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <Topbar
+          title={screen === "detail" ? "Alert detail" : titles[screen]}
+          breadcrumb="Security"
+          actions={
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <IconButton aria-label="Toggle theme" icon={<Icon name={theme === "dark" ? "sun" : "moon"} size={16} />} onClick={() => setTheme(theme === "dark" ? "light" : "dark")} />
+              <IconButton aria-label="Notifications" icon={<Icon name="bell" size={16} />} />
+              <Avatar name="Priya Shah" size="sm" />
+            </div>
+          }
+        />
+        <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

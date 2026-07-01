@@ -1,0 +1,179 @@
+/* ============================================================
+   COLOR TOKENS
+   Base palette in OKLCH + semantic aliases.
+   Light mode = :root default. Dark mode = [data-theme="dark"].
+   Both are first-class — neither is a "night mode" afterthought.
+   ============================================================ */
+
+:root {
+  /* ---- Base neutrals (cool, near-white / near-black, chroma ~0.006-0.02) ---- */
+  --n-0:   oklch(100% 0.002 240);
+  --n-25:  oklch(98.5% 0.004 240);
+  --n-50:  oklch(97% 0.006 240);
+  --n-100: oklch(94% 0.008 240);
+  --n-150: oklch(90% 0.010 240);
+  --n-200: oklch(85% 0.012 240);
+  --n-300: oklch(75% 0.014 240);
+  --n-400: oklch(62% 0.016 240);
+  --n-500: oklch(52% 0.018 240);
+  --n-600: oklch(42% 0.018 240);
+  --n-700: oklch(33% 0.018 240);
+  --n-800: oklch(24% 0.018 240);
+  --n-850: oklch(19% 0.016 240);
+  --n-900: oklch(15% 0.014 240);
+  --n-950: oklch(11% 0.012 240);
+  --n-975: oklch(8% 0.010 240);
+  --n-1000: oklch(6% 0.008 240);
+
+  /* ---- Brand: mint/teal (primary) + cyan (secondary), same L/C family, hue apart ---- */
+  --brand-teal-300: oklch(88% 0.11 165);
+  --brand-teal-400: oklch(78% 0.15 165);
+  --brand-teal-500: oklch(68% 0.16 165);
+  --brand-teal-600: oklch(58% 0.15 165);
+  --brand-teal-700: oklch(46% 0.13 165);
+
+  --brand-cyan-300: oklch(88% 0.09 220);
+  --brand-cyan-400: oklch(78% 0.12 220);
+  --brand-cyan-500: oklch(68% 0.13 220);
+  --brand-cyan-600: oklch(58% 0.13 220);
+  --brand-cyan-700: oklch(46% 0.12 220);
+
+  /* ---- Severity scale: shared L/C, hue sweeps warm(critical) -> cool(info) ---- */
+  --sev-critical-400: oklch(70% 0.19 25);
+  --sev-critical-500: oklch(60% 0.20 25);
+  --sev-critical-600: oklch(50% 0.19 25);
+
+  --sev-high-400: oklch(75% 0.17 55);
+  --sev-high-500: oklch(66% 0.18 55);
+  --sev-high-600: oklch(56% 0.17 55);
+
+  --sev-medium-400: oklch(85% 0.15 90);
+  --sev-medium-500: oklch(76% 0.16 90);
+  --sev-medium-600: oklch(64% 0.15 90);
+
+  --sev-low-400: oklch(78% 0.10 235);
+  --sev-low-500: oklch(68% 0.12 235);
+  --sev-low-600: oklch(56% 0.12 235);
+
+  --sev-info-400: oklch(78% 0.03 235);
+  --sev-info-500: oklch(66% 0.03 235);
+  --sev-info-600: oklch(54% 0.03 235);
+
+  /* ================= SEMANTIC ALIASES — LIGHT (default) ================= */
+  --bg-canvas: var(--n-25);
+  --bg-surface: var(--n-0);
+  --bg-surface-raised: var(--n-0);
+  --bg-surface-sunken: var(--n-50);
+  --bg-overlay: oklch(15% 0.01 240 / 0.45);
+  --bg-code: var(--n-50);
+
+  --fg-primary: var(--n-950);
+  --fg-secondary: var(--n-600);
+  --fg-tertiary: var(--n-400);
+  --fg-disabled: var(--n-300);
+  --fg-on-brand: var(--n-975);
+  --fg-inverse: var(--n-0);
+
+  --border-subtle: var(--n-100);
+  --border-default: var(--n-150);
+  --border-strong: var(--n-300);
+  --border-focus: var(--brand-teal-600);
+
+  --accent-primary: var(--brand-teal-600);
+  --accent-primary-hover: var(--brand-teal-700);
+  --accent-primary-subtle: var(--brand-teal-300);
+  --accent-primary-bg: oklch(88% 0.11 165 / 0.16);
+
+  --accent-secondary: var(--brand-cyan-600);
+  --accent-secondary-hover: var(--brand-cyan-700);
+  --accent-secondary-bg: oklch(88% 0.09 220 / 0.16);
+
+  --sev-critical: var(--sev-critical-600);
+  --sev-critical-bg: oklch(70% 0.19 25 / 0.14);
+  --sev-high: var(--sev-high-600);
+  --sev-high-bg: oklch(75% 0.17 55 / 0.16);
+  --sev-medium: var(--sev-medium-600);
+  --sev-medium-bg: oklch(85% 0.15 90 / 0.20);
+  --sev-low: var(--sev-low-600);
+  --sev-low-bg: oklch(78% 0.10 235 / 0.14);
+  --sev-info: var(--sev-info-600);
+  --sev-info-bg: oklch(78% 0.03 235 / 0.14);
+
+  --success: var(--brand-teal-600);
+  --success-bg: oklch(88% 0.11 165 / 0.16);
+  --warning: var(--sev-medium-600);
+  --warning-bg: oklch(85% 0.15 90 / 0.20);
+  --danger: var(--sev-critical-600);
+  --danger-bg: oklch(70% 0.19 25 / 0.14);
+
+  --chart-grid: var(--n-100);
+  --chart-axis: var(--n-400);
+  --chart-series-1: var(--brand-teal-600);
+  --chart-series-2: var(--brand-cyan-600);
+  --chart-series-3: var(--sev-medium-500);
+  --chart-series-4: var(--sev-critical-500);
+  --chart-series-5: oklch(58% 0.13 280);
+
+  --shadow-color: 235 15% 10%;
+  --scrim: oklch(10% 0.01 240 / 0.5);
+}
+
+/* ================= SEMANTIC ALIASES — DARK ================= */
+:root[data-theme="dark"] {
+  --bg-canvas: var(--n-1000);
+  --bg-surface: var(--n-950);
+  --bg-surface-raised: var(--n-900);
+  --bg-surface-sunken: var(--n-975);
+  --bg-overlay: oklch(6% 0.01 240 / 0.6);
+  --bg-code: var(--n-975);
+
+  --fg-primary: var(--n-25);
+  --fg-secondary: var(--n-300);
+  --fg-tertiary: var(--n-500);
+  --fg-disabled: var(--n-700);
+  --fg-on-brand: var(--n-975);
+  --fg-inverse: var(--n-950);
+
+  --border-subtle: var(--n-850);
+  --border-default: var(--n-800);
+  --border-strong: var(--n-600);
+  --border-focus: var(--brand-teal-400);
+
+  --accent-primary: var(--brand-teal-400);
+  --accent-primary-hover: var(--brand-teal-300);
+  --accent-primary-subtle: var(--brand-teal-700);
+  --accent-primary-bg: oklch(68% 0.16 165 / 0.16);
+
+  --accent-secondary: var(--brand-cyan-400);
+  --accent-secondary-hover: var(--brand-cyan-300);
+  --accent-secondary-bg: oklch(68% 0.13 220 / 0.16);
+
+  --sev-critical: var(--sev-critical-400);
+  --sev-critical-bg: oklch(60% 0.20 25 / 0.20);
+  --sev-high: var(--sev-high-400);
+  --sev-high-bg: oklch(66% 0.18 55 / 0.20);
+  --sev-medium: var(--sev-medium-400);
+  --sev-medium-bg: oklch(76% 0.16 90 / 0.18);
+  --sev-low: var(--sev-low-400);
+  --sev-low-bg: oklch(68% 0.12 235 / 0.20);
+  --sev-info: var(--sev-info-400);
+  --sev-info-bg: oklch(66% 0.03 235 / 0.20);
+
+  --success: var(--brand-teal-400);
+  --success-bg: oklch(68% 0.16 165 / 0.16);
+  --warning: var(--sev-medium-400);
+  --warning-bg: oklch(76% 0.16 90 / 0.18);
+  --danger: var(--sev-critical-400);
+  --danger-bg: oklch(60% 0.20 25 / 0.20);
+
+  --chart-grid: var(--n-850);
+  --chart-axis: var(--n-600);
+  --chart-series-1: var(--brand-teal-400);
+  --chart-series-2: var(--brand-cyan-400);
+  --chart-series-3: var(--sev-medium-400);
+  --chart-series-4: var(--sev-critical-400);
+  --chart-series-5: oklch(70% 0.13 280);
+
+  --shadow-color: 235 60% 2%;
+  --scrim: oklch(2% 0.01 240 / 0.65);
+}

@@ -1,0 +1,43 @@
+<!-- @dsCard group="Components" viewport="740x680" name="Charts — Line, Bar, Donut, Gauge, Sparkline, Heatmap, Network" -->
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-canvas);font-family:var(--font-sans);color:var(--fg-primary)}
+.lbl{font:var(--text-overline);letter-spacing:var(--tracking-overline);color:var(--fg-tertiary);margin:0 0 8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { LineChart, BarChart, DonutChart, GaugeChart, Sparkline, Heatmap, NetworkGraph } = window.DS;
+function Demo(){
+  return (
+    <div style={{padding:22, display:"flex", flexDirection:"column", gap:24}}>
+      <div className="grid">
+        <div><p className="lbl">REQUEST VOLUME — LINE</p><LineChart data={[{label:"Mon",value:120},{label:"Tue",value:180},{label:"Wed",value:90},{label:"Thu",value:210},{label:"Fri",value:160}]} width={320} height={160} /></div>
+        <div><p className="lbl">FINDINGS BY SEVERITY — BAR</p><BarChart width={320} height={160} data={[{label:"Crit",value:4,color:"var(--sev-critical)"},{label:"High",value:12,color:"var(--sev-high)"},{label:"Med",value:22,color:"var(--sev-medium)"},{label:"Low",value:31,color:"var(--sev-low)"}]} /></div>
+      </div>
+      <div className="grid">
+        <div><p className="lbl">FINDINGS BY CATEGORY — DONUT</p><DonutChart centerValue="284" data={[{label:"Injection",value:120,color:"var(--sev-critical)"},{label:"Auth",value:80,color:"var(--sev-high)"},{label:"Config",value:84,color:"var(--sev-info)"}]} /></div>
+        <div><p className="lbl">SECURITY POSTURE — GAUGE</p><GaugeChart value={72} label="Posture score" /></div>
+      </div>
+      <div>
+        <p className="lbl">ACTIVITY HEATMAP</p>
+        <Heatmap rows={["Mon","Tue","Wed","Thu"]} cols={["00","06","12","18"]} values={[[2,8,4,1],[1,3,9,6],[0,2,5,3],[4,6,2,9]]} />
+      </div>
+      <div className="grid">
+        <div><p className="lbl">SPARKLINE (inline)</p><Sparkline values={[4,7,5,9,12,8,14]} width={140} height={32} /></div>
+        <div><p className="lbl">SERVICE TOPOLOGY — NETWORK</p>
+          <NetworkGraph width={320} height={180} nodes={[{id:"gw",label:"API Gateway",x:160,y:30,kind:"hub"},{id:"auth",label:"auth-svc",x:70,y:130},{id:"pay",label:"payments-svc",x:250,y:130,flagged:true}]} edges={[{from:"gw",to:"auth"},{from:"gw",to:"pay",flagged:true}]} />
+        </div>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body></html>

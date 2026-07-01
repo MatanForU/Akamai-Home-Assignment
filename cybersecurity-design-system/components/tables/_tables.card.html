@@ -1,0 +1,53 @@
+<!-- @dsCard group="Components" viewport="740x560" name="Tables — Classic, Expandable, Badges, Card-list" -->
+<html><head>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-canvas);font-family:var(--font-sans)}
+.lbl{font:var(--text-overline);letter-spacing:var(--tracking-overline);color:var(--fg-tertiary);margin:0 0 8px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { DataTable, CardTable, Badge } = window.DS;
+const rows = [
+  {id:1, method:"POST", path:"/v2/charge", status:403, ip:"203.0.113.4"},
+  {id:2, method:"GET", path:"/v2/users/me", status:200, ip:"198.51.100.9"},
+  {id:3, method:"POST", path:"/v2/refund", status:401, ip:"192.0.2.15"},
+];
+function Demo(){
+  return (
+    <div style={{padding:20, display:"flex", flexDirection:"column", gap:22}}>
+      <div>
+        <p className="lbl">CLASSIC — SELECTABLE, BADGES, EXPANDABLE</p>
+        <DataTable
+          selectable
+          expandable
+          columns={[
+            {key:"method", label:"Method", mono:true},
+            {key:"path", label:"Path", mono:true},
+            {key:"ip", label:"Source IP", mono:true},
+            {key:"status", label:"Status", render:(r)=> <Badge tone={r.status>=400?"critical":"success"} dot={false}>{r.status}</Badge>},
+          ]}
+          rows={rows}
+          renderExpanded={(r) => <div style={{font:"var(--text-mono-sm)", color:"var(--fg-secondary)"}}>request_id: req_{r.id}8f21a0c9 · user-agent: curl/8.4.0</div>}
+        />
+      </div>
+      <div>
+        <p className="lbl">CARD-LIST — MOBILE-FRIENDLY</p>
+        <CardTable
+          rows={rows}
+          renderTitle={(r)=> `${r.method} ${r.path}`}
+          renderMeta={(r)=> r.ip}
+          renderTrailing={(r)=> <Badge tone={r.status>=400?"critical":"success"} dot={false}>{r.status}</Badge>}
+        />
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body></html>
