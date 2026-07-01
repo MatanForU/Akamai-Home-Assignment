@@ -44,7 +44,7 @@ function App() {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b border-slate-200/60 glass dark:border-slate-800/60 transition-all">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
             <img src={akamaiLogo} alt="Akamai logo" className="h-9 w-auto" />
             <div>

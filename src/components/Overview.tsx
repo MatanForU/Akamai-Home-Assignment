@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Search, SearchX, X } from "lucide-react";
-import type { Area, Issue, IssueType } from "../lib/types";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Filter, Search, SearchX, X } from "lucide-react";
+import type { Area, Issue, Severity } from "../lib/types";
 import { AREAS, SPEC_META, issues, matchScorePct } from "../lib/mockData";
 import { formatRelativeTime, ISSUE_TYPE_LABELS, SEVERITY_ORDER } from "../lib/scoring";
 import { MatchScoreRing } from "./MatchScoreRing";
+import { SeverityDonut } from "./SeverityDonut";
 import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
-import { StatCard } from "../design-system/components/StatCard";
 import { Input } from "../design-system/components/Input";
-
-const ISSUE_TYPES: IssueType[] = ["shadowApi", "undocumentedParam", "staleParam", "paramMismatch", "ghostEndpoint"];
 
 type SortKey = "risk" | "severity" | "traffic" | "lastSeen";
 type SortDir = "asc" | "desc";
@@ -19,22 +17,25 @@ const SORT_COLUMNS: { key: SortKey; label: string }[] = [
   { key: "lastSeen", label: "Last seen" },
 ];
 
-function areaRiskLabel(areaIssues: Issue[]): { label: string; classes: string } {
+const SEVERITY_OPTIONS: Severity[] = ["critical", "high", "medium", "low"];
+
+function areaRiskLabel(areaIssues: Issue[]): { label: string; classes: string; color: string } {
   if (areaIssues.length === 0)
-    return { label: "No issues", classes: "bg-slate-50 text-slate-400 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700" };
+    return { label: "No issues", classes: "bg-slate-50 text-slate-400 ring-1 ring-inset ring-slate-200 dark:bg-slate-800 dark:text-slate-500 dark:ring-slate-700", color: "var(--n-300)" };
   const avg = areaIssues.reduce((s, i) => s + i.riskScore, 0) / areaIssues.length;
-  if (avg >= 70) return { label: "Critical", classes: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400" };
-  if (avg >= 50) return { label: "High", classes: "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400" };
-  if (avg >= 30) return { label: "Medium", classes: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400" };
-  return { label: "Low", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400" };
+  if (avg >= 70) return { label: "Critical", classes: "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400", color: "var(--sev-critical-500)" };
+  if (avg >= 50) return { label: "High", classes: "bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400", color: "var(--sev-high-500)" };
+  if (avg >= 30) return { label: "Medium", classes: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400", color: "var(--sev-medium-500)" };
+  return { label: "Low", classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400", color: "var(--sev-low-500)" };
 }
 
 export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => void }) {
   const [areaFilter, setAreaFilter] = useState<Area | null>(null);
-  const [typeFilter, setTypeFilter] = useState<IssueType | null>(null);
+  const [severityFilter, setSeverityFilter] = useState<Severity | null>(null);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("risk");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -62,134 +63,176 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
     };
     return issues
       .filter((i) => (areaFilter ? i.area === areaFilter : true))
-      .filter((i) => (typeFilter ? i.issueType === typeFilter : true))
+      .filter((i) => (severityFilter ? i.severity === severityFilter : true))
       .filter((i) => (q ? i.path.toLowerCase().includes(q) : true))
       .sort((a, b) => (sortDir === "desc" ? sortValue(b) - sortValue(a) : sortValue(a) - sortValue(b)));
-  }, [areaFilter, typeFilter, query, sortKey, sortDir]);
+  }, [areaFilter, severityFilter, query, sortKey, sortDir]);
 
-  const counts = useMemo(() => {
-    const m = new Map<IssueType, number>();
-    for (const t of ISSUE_TYPES) m.set(t, 0);
-    for (const i of issues) m.set(i.issueType, (m.get(i.issueType) ?? 0) + 1);
+  const severityCounts = useMemo(() => {
+    const m = { critical: 0, high: 0, medium: 0, low: 0 } as Record<Severity, number>;
+    for (const i of issues) m[i.severity] += 1;
     return m;
   }, []);
 
-  const criticalCount = issues.filter((i) => i.severity === "critical").length;
-  const hasActiveFilters = Boolean(areaFilter || typeFilter || query);
+  const areaStats = useMemo(() => {
+    const stats = AREAS.map((area) => {
+      const areaIssues = issues.filter((i) => i.area === area);
+      return { area, count: areaIssues.length, risk: areaRiskLabel(areaIssues) };
+    });
+    const maxCount = Math.max(...stats.map((s) => s.count), 1);
+    return stats.map((s) => ({ ...s, barWidthPct: Math.max((s.count / maxCount) * 100, 6) }));
+  }, []);
+
+  const activeFilterCount = [areaFilter, severityFilter].filter(Boolean).length;
+  const hasActiveFilters = Boolean(areaFilter || severityFilter || query);
 
   const clearAllFilters = () => {
     setAreaFilter(null);
-    setTypeFilter(null);
+    setSeverityFilter(null);
     setQuery("");
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-slide-up">
+    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
+      <div className="mb-5 animate-slide-up">
         <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
           Comparing <span className="text-slate-900 dark:text-slate-200 font-bold">{SPEC_META.name}</span> against {SPEC_META.windowLabel.toLowerCase()} of production traffic
         </p>
-        {criticalCount > 0 && (
-          <div className="flex items-center gap-2 rounded-full glass border-red-500/20 px-4 py-2 text-sm font-bold text-red-600 shadow-sm ring-1 ring-inset ring-red-500/20">
-            <AlertTriangle className="h-4 w-4" />
-            {criticalCount} critical issue{criticalCount > 1 ? "s" : ""}
-          </div>
-        )}
       </div>
 
       {/* Top summary row */}
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-12 animate-slide-up [animation-delay:100ms]">
-        <div className="flex items-center gap-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-5 dark:border-slate-800/60 dark:bg-slate-900/50">
-          <MatchScoreRing pct={matchScorePct()} />
-          <div>
-            <div className="text-sm font-semibold text-slate-900 dark:text-white">Spec vs Traffic</div>
-            <div className="mt-1 text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 leading-tight">
-              {SPEC_META.matchedEndpoints} / {SPEC_META.totalSpecEndpoints}
-            </div>
-            <div className="mt-2 max-w-[15rem] text-xs font-medium text-slate-500 dark:text-slate-400">
-              endpoints align with observed traffic signatures.
+      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3 animate-slide-up [animation-delay:100ms]">
+        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="mb-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Spec vs Traffic</h2>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">How closely the spec matches real traffic</p>
+          </div>
+          <div className="flex items-center gap-6">
+            <MatchScoreRing pct={matchScorePct()} />
+            <div>
+              <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400 leading-tight">
+                {SPEC_META.matchedEndpoints} / {SPEC_META.totalSpecEndpoints}
+              </div>
+              <div className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                endpoints align with observed traffic signatures.
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass lg:col-span-7 dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Anomaly types</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {issues.length} issues found in observed traffic, independent of the match score
-            </p>
+        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="mb-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Total Issues</h2>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Breakdown by severity</p>
           </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {ISSUE_TYPES.map((t, idx) => (
-              <button
-                key={t}
-                onClick={() => setTypeFilter(typeFilter === t ? null : t)}
-                className="flex flex-col text-left transition-all duration-300 hover-lift"
-                style={{
-                  animationDelay: `${(idx + 2) * 50}ms`,
-                  borderRadius: "var(--radius-lg)",
-                  outline: typeFilter === t ? "2px solid var(--accent-primary)" : "2px solid transparent",
-                  outlineOffset: 2,
-                }}
-              >
-                <StatCard
-                  label={ISSUE_TYPE_LABELS[t]}
-                  value={counts.get(t) ?? 0}
-                />
-              </button>
-            ))}
+          <div className="flex items-center justify-center">
+            <SeverityDonut counts={severityCounts} active={severityFilter} onSelect={setSeverityFilter} />
           </div>
         </div>
-      </div>
 
-      {/* Risk heatmap by area */}
-      <div className="mt-8 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass animate-slide-up [animation-delay:200ms] dark:border-slate-800/60 dark:bg-slate-900/50">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Risk Exposure by Area</h2>
+        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="mb-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Risk Exposure by Area</h2>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Select an area to focus priorities</p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {AREAS.map((area) => {
-            const areaIssues = issues.filter((i) => i.area === area);
-            const risk = areaRiskLabel(areaIssues);
-            const isActive = areaFilter === area;
-            return (
-              <button
-                key={area}
-                onClick={() => setAreaFilter(areaFilter === area ? null : area)}
-                className={`group relative rounded-xl border p-5 text-left transition-all duration-300 hover-lift ${
-                  isActive
-                    ? "border-indigo-600 ring-2 ring-indigo-600/10 bg-indigo-50/30 dark:bg-indigo-950/20"
-                    : "border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/50"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{area}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter ${risk.classes}`}>
-                    {risk.label}
-                  </span>
-                </div>
-                <div className="text-2xl font-black text-slate-900 dark:text-white">
-                  {areaIssues.length}
-                </div>
-                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  Issues
-                </div>
-              </button>
-            );
-          })}
+          <div className="flex flex-col justify-center gap-3.5 overflow-y-auto" style={{ height: 148 }}>
+            {areaStats.map(({ area, count, risk, barWidthPct }) => {
+              const isActive = areaFilter === area;
+              return (
+                <button
+                  key={area}
+                  onClick={() => setAreaFilter(areaFilter === area ? null : area)}
+                  className="flex shrink-0 items-center gap-3 text-left transition-all duration-300"
+                >
+                  <span className="w-14 shrink-0 truncate text-[11px] font-bold text-slate-700 dark:text-slate-200">{area}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{
+                        width: `${barWidthPct}%`,
+                        background: risk.color,
+                        opacity: areaFilter && !isActive ? 0.35 : 1,
+                        outline: isActive ? "2px solid var(--accent-primary)" : "2px solid transparent",
+                        outlineOffset: 1,
+                      }}
+                    />
+                  </div>
+                  <span className="w-4 shrink-0 text-right text-[11px] font-black text-slate-900 dark:text-white">{count}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Priority queue */}
-      <div className="mt-8 rounded-2xl border border-slate-200/60 bg-white/50 glass shadow-xl animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Priority Queue</h2>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">AI-ranked issues by severity, traffic, and risk</p>
+      <h2 className="mt-6 text-lg font-bold text-slate-900 dark:text-white animate-slide-up [animation-delay:300ms]">Endpoints</h2>
+      <div className="mt-2 rounded-2xl border border-gray-100 bg-white/50 glass animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
+        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
+          <div className="relative">
+            <button
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={`flex cursor-pointer items-center gap-2 rounded-[var(--radius-control)] border px-4 py-2.5 text-xs font-medium transition-colors ${
+                activeFilterCount > 0
+                  ? "border-indigo-600 bg-indigo-50 text-indigo-600 dark:border-indigo-500 dark:bg-indigo-950/30 dark:text-indigo-400"
+                  : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800/50"
+              }`}
+            >
+              <Filter className="h-3.5 w-3.5" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {filtersOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setFiltersOpen(false)} />
+                <div className="absolute left-0 z-20 mt-2 w-64 rounded-[var(--radius-control)] border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                  <div className="mb-3">
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Area</label>
+                    <select
+                      value={areaFilter ?? ""}
+                      onChange={(e) => setAreaFilter((e.target.value || null) as Area | null)}
+                      className="w-full cursor-pointer rounded-[var(--radius-control)] border border-slate-200 bg-white py-2 pl-3 pr-10 text-sm font-normal text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      <option value="">All areas</option>
+                      {AREAS.map((a) => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">Severity</label>
+                    <select
+                      value={severityFilter ?? ""}
+                      onChange={(e) => setSeverityFilter((e.target.value || null) as Severity | null)}
+                      className="w-full cursor-pointer rounded-[var(--radius-control)] border border-slate-200 bg-white py-2 pl-3 pr-10 text-sm font-normal text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                    >
+                      <option value="">All severities</option>
+                      {SEVERITY_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={() => {
+                        setAreaFilter(null);
+                        setSeverityFilter(null);
+                      }}
+                      className="mt-3 text-xs font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
+
           <div className="flex items-center gap-3">
             <div className="relative" style={{ width: 256 }}>
               <Input
@@ -207,6 +250,7 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
                 </button>
               )}
             </div>
+
             {hasActiveFilters && (
               <button
                 onClick={clearAllFilters}
@@ -222,11 +266,11 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-900/30">
-                <th className="px-6 py-4">Endpoint</th>
-                <th className="px-6 py-4">Area</th>
-                <th className="px-6 py-4">Issue Type</th>
+                <th className="px-5 py-3">Endpoint</th>
+                <th className="px-5 py-3">Area</th>
+                <th className="px-5 py-3">Issue Type</th>
                 {SORT_COLUMNS.map((col) => (
-                  <th key={col.key} className="px-6 py-4">
+                  <th key={col.key} className="px-5 py-3">
                     <button
                       onClick={() => toggleSort(col.key)}
                       className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-white"
@@ -240,7 +284,7 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
                     </button>
                   </th>
                 ))}
-                <th className="px-6 py-4 text-right">Action</th>
+                <th className="px-5 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
@@ -250,7 +294,7 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
                   onClick={() => onSelectIssue(issue.id)}
                   className="group cursor-pointer transition-all hover:bg-indigo-50/30 dark:hover:bg-indigo-900/10"
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <MethodBadge method={issue.method} />
                       <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200">
@@ -258,22 +302,22 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
                       </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-5 py-3">
                     <AreaBadge area={issue.area} />
                   </td>
-                  <td className="px-6 py-4 font-bold text-slate-500 dark:text-slate-400 text-[11px]">
+                  <td className="px-5 py-3 font-bold text-slate-500 dark:text-slate-400 text-[11px]">
                     {ISSUE_TYPE_LABELS[issue.issueType]}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-5 py-3">
                     <SeverityBadge severity={issue.severity} />
                   </td>
-                  <td className="px-6 py-4 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  <td className="px-5 py-3 font-mono text-[11px] font-bold text-slate-700 dark:text-slate-300">
                     {issue.traffic7d.toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  <td className="px-5 py-3 text-[11px] font-medium text-slate-500 dark:text-slate-400">
                     {formatRelativeTime(issue.lastSeenMinutesAgo)}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-3">
                       <ActionBadge action={issue.recommendedAction} />
                       <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-500" />
@@ -296,7 +340,7 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
         </div>
       </div>
 
-      <footer className="mt-12 text-center">
+      <footer className="mt-8 text-center">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
           Showing {filtered.length} of {issues.length} detected patterns &middot; AI risk-scoring engine v4.2
         </p>

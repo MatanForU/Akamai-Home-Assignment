@@ -39,7 +39,9 @@ const ACTION_STYLES: Record<RecommendedAction, string> = {
 
 export function ActionBadge({ action }: { action: RecommendedAction }) {
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${ACTION_STYLES[action]}`}>
+    <span
+      className={`inline-flex items-center rounded-[var(--radius-control)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${ACTION_STYLES[action]}`}
+    >
       {ACTION_LABELS[action]}
     </span>
   );

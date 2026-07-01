@@ -1,38 +1,44 @@
 
+const BOX = 176;
+const CENTER = BOX / 2;
+const RADIUS = 68;
+const STROKE_WIDTH = 14;
+const VALUE_FONT = 32;
+const LABEL_FONT = 11;
+
 export function MatchScoreRing({ pct }: { pct: number }) {
-  const radius = 54;
-  const circumference = 2 * Math.PI * radius;
+  const circumference = 2 * Math.PI * RADIUS;
   const offset = circumference * (1 - pct / 100);
   const color = pct >= 90 ? "#6366f1" : pct >= 75 ? "#f59e0b" : "#ef4444";
 
   return (
-    <svg width="140" height="140" viewBox="0 0 140 140" className="shrink-0 drop-shadow-sm">
-      <circle 
-        cx="70" 
-        cy="70" 
-        r={radius} 
-        fill="none" 
-        stroke="currentColor" 
-        className="text-slate-100 dark:text-slate-800" 
-        strokeWidth="10" 
+    <svg width={BOX} height={BOX} viewBox={`0 0 ${BOX} ${BOX}`} className="shrink-0">
+      <circle
+        cx={CENTER}
+        cy={CENTER}
+        r={RADIUS}
+        fill="none"
+        stroke="currentColor"
+        className="text-slate-100 dark:text-slate-800"
+        strokeWidth={STROKE_WIDTH}
       />
       <circle
-        cx="70"
-        cy="70"
-        r={radius}
+        cx={CENTER}
+        cy={CENTER}
+        r={RADIUS}
         fill="none"
         stroke={color}
-        strokeWidth="10"
+        strokeWidth={STROKE_WIDTH}
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         className="animate-[ring-fill_1s_ease-out]"
-        transform="rotate(-90 70 70)"
+        transform={`rotate(-90 ${CENTER} ${CENTER})`}
       />
-      <text x="70" y="66" textAnchor="middle" fontSize="28" fontWeight="800" className="fill-slate-900 dark:fill-white font-sans tracking-tight">
+      <text x={CENTER} y={CENTER - 4} textAnchor="middle" fontSize={VALUE_FONT} fontWeight="800" className="fill-slate-900 dark:fill-white font-sans tracking-tight">
         {pct}%
       </text>
-      <text x="70" y="88" textAnchor="middle" fontSize="11" fontWeight="600" className="fill-slate-400 dark:fill-slate-500 uppercase tracking-widest">
+      <text x={CENTER} y={CENTER + LABEL_FONT + 6} textAnchor="middle" fontSize={LABEL_FONT} fontWeight="700" className="fill-slate-400 dark:fill-slate-500 uppercase tracking-widest">
         matched
       </text>
     </svg>
