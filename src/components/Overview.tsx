@@ -8,7 +8,7 @@ import { ActionBadge, AreaBadge, MethodBadge, SeverityBadge } from "./Badges";
 import { StatCard } from "../design-system/components/StatCard";
 import { Input } from "../design-system/components/Input";
 
-const ISSUE_TYPES: IssueType[] = ["shadow_api", "param_undocumented", "param_unused", "param_mismatch", "spec_only"];
+const ISSUE_TYPES: IssueType[] = ["shadowApi", "undocumentedParam", "staleParam", "paramMismatch", "ghostEndpoint"];
 
 type SortKey = "risk" | "severity" | "traffic" | "lastSeen";
 type SortDir = "asc" | "desc";

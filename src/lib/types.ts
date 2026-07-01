@@ -1,11 +1,12 @@
 export type Area = "Payments" | "Users" | "Orders" | "Catalog";
 
 export type IssueType =
-  | "shadow_api"
-  | "spec_only"
-  | "param_undocumented"
-  | "param_unused"
-  | "param_mismatch";
+  | "shadowApi"
+  | "ghostEndpoint"
+  | "undocumentedParam"
+  | "staleParam"
+  | "paramMismatch"
+  | "matched";
 
 export type Severity = "critical" | "high" | "medium" | "low";
 

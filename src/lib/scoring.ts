@@ -13,11 +13,12 @@ export interface RiskBreakdown {
 }
 
 const ISSUE_TYPE_WEIGHT: Record<IssueType, number> = {
-  shadow_api: 40,
-  param_mismatch: 25,
-  param_undocumented: 20,
-  param_unused: 8,
-  spec_only: 5,
+  shadowApi: 40,
+  paramMismatch: 25,
+  undocumentedParam: 20,
+  staleParam: 8,
+  ghostEndpoint: 5,
+  matched: 0,
 };
 
 const AREA_WEIGHT: Record<Area, number> = {
@@ -65,25 +66,28 @@ export function computeRisk(
 
 export function recommendAction(issueType: IssueType, severity: Severity): RecommendedAction {
   switch (issueType) {
-    case "shadow_api":
+    case "shadowApi":
       return severity === "critical" || severity === "high" ? "investigate" : "notify_dev";
-    case "param_mismatch":
+    case "paramMismatch":
       return severity === "critical" || severity === "high" ? "investigate" : "notify_dev";
-    case "param_undocumented":
+    case "undocumentedParam":
       return severity === "critical" ? "investigate" : severity === "high" ? "notify_dev" : "update_spec";
-    case "param_unused":
+    case "staleParam":
       return severity === "critical" || severity === "high" ? "notify_dev" : "update_spec";
-    case "spec_only":
+    case "ghostEndpoint":
       return severity === "low" ? "no_action" : "update_spec";
+    case "matched":
+      return "no_action";
   }
 }
 
 const ISSUE_TYPE_LABEL: Record<IssueType, string> = {
-  shadow_api: "active in production but missing from the specification",
-  param_mismatch: "sending a parameter type that does not match the spec",
-  param_undocumented: "accepting parameters that are not documented in the spec",
-  param_unused: "documented in the spec but never used in observed traffic",
-  spec_only: "documented in the spec but not seen in production traffic in the last 7 days",
+  shadowApi: "active in production but missing from the specification",
+  paramMismatch: "sending a parameter type that does not match the spec",
+  undocumentedParam: "accepting parameters that are not documented in the spec",
+  staleParam: "documented in the spec but never used in observed traffic",
+  ghostEndpoint: "documented in the spec but not seen in production traffic in the last 7 days",
+  matched: "matching the specification exactly, with no discrepancies detected",
 };
 
 export function buildRationale(
@@ -126,11 +130,12 @@ export const SEVERITY_ORDER: Record<Severity, number> = {
 };
 
 export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
-  shadow_api: "Shadow API",
-  param_mismatch: "Parameter mismatch",
-  param_undocumented: "Undocumented parameter",
-  param_unused: "Unused spec parameter",
-  spec_only: "Spec-only endpoint",
+  shadowApi: "Shadow API",
+  paramMismatch: "Parameter mismatch",
+  undocumentedParam: "Undocumented parameter",
+  staleParam: "Stale parameter",
+  ghostEndpoint: "Ghost endpoint",
+  matched: "Matched",
 };
 
 export const ACTION_LABELS: Record<RecommendedAction, string> = {
