@@ -102,7 +102,7 @@ export function buildRationale(
       ? "Because it belongs to Store, undocumented behavior here can expose order or payment logic and bypass validation the spec was meant to enforce."
       : area === "User"
         ? "Because it belongs to User, undocumented behavior here can expose account or identity data outside the spec's intended contract."
-        : "It belongs to Pet, a moderately sensitive area — drift here is worth tracking but is less likely to be an immediate security exposure.";
+        : "It belongs to Pet, a moderately sensitive area, so drift here is worth tracking but is less likely to be an immediate security exposure.";
   const trafficNote =
     traffic7d >= 1000
       ? ` It has seen ${traffic7d.toLocaleString()} requests in the last 7 days, so any gap here affects real, ongoing traffic.`
@@ -115,7 +115,7 @@ export function buildRationale(
       : severity === "high"
         ? " Combined, this ranks as high priority."
         : severity === "medium"
-          ? " Combined, this is medium priority — worth scheduling, not urgent."
+          ? " Combined, this is medium priority, worth scheduling but not urgent."
           : " Combined, this is low priority and likely routine.";
   return base + " " + areaNote + trafficNote + severityNote;
 }
@@ -169,4 +169,15 @@ export function formatRelativeTime(minutesAgo: number): string {
   if (minutesAgo < 60) return `${minutesAgo} min ago`;
   if (minutesAgo < 60 * 24) return `${Math.round(minutesAgo / 60)}h ago`;
   return `${Math.round(minutesAgo / (60 * 24))}d ago`;
+}
+
+// Compact display for large numbers (e.g. 74600 -> "74.6K"). Below 1,000
+// falls back to a plain, comma-formatted number. Shared by every screen that
+// displays raw traffic counts.
+export function formatCompactNumber(n: number): string {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+  }
+  return n.toLocaleString();
 }

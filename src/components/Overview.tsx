@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, ChevronDown, ChevronRight, Check, Search, SearchX, X, type LucideIcon } from "lucide-react";
 import type { Area, Issue, IssueType } from "../lib/types";
@@ -17,7 +17,7 @@ const METHOD_DOT: Record<Method, string> = {
 const METHOD_OPTIONS: Method[] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 import { AREAS, SPEC_META, issues } from "../lib/mockData";
 
-import { formatRelativeTime, ISSUE_TYPE_LABELS, ISSUE_TYPE_ICONS, ACTION_DOT, SEVERITY_ORDER } from "../lib/scoring";
+import { formatRelativeTime, formatCompactNumber, ISSUE_TYPE_LABELS, ISSUE_TYPE_ICONS, ACTION_DOT, SEVERITY_ORDER } from "../lib/scoring";
 import { MatchScoreRing } from "./MatchScoreRing";
 import { ActionBadge, MethodBadge } from "./Badges";
 import { Input } from "../design-system/components/Input";
@@ -35,16 +35,6 @@ const SORT_COLUMNS: { key: SortKey; label: string }[] = [
 const ISSUE_TYPE_OPTIONS: IssueType[] = ["shadowApi", "ghostEndpoint", "undocumentedParam", "staleParam", "paramMismatch"];
 
 const SPEC_ISSUE_TYPES: IssueType[] = ["paramMismatch", "undocumentedParam", "staleParam", "ghostEndpoint"];
-
-// Compact display for large stat-strip numbers (e.g. 294800 -> "294.8K").
-// Below 1,000 falls back to a plain, comma-formatted number.
-function formatCompactNumber(n: number): string {
-  if (n >= 1000) {
-    const k = n / 1000;
-    return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
-  }
-  return n.toLocaleString();
-}
 
 const WINDOW_OPTIONS: { minutes: number; label: string }[] = [
   { minutes: 60 * 24, label: "Last 24 hours" },
@@ -264,7 +254,13 @@ function WindowPicker({ value, onChange }: { value: number; onChange: (minutes: 
   );
 }
 
-export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => void }) {
+export function Overview({
+  onSelectIssue,
+  onVisibleIssuesChange,
+}: {
+  onSelectIssue: (id: string) => void;
+  onVisibleIssuesChange?: (ids: string[]) => void;
+}) {
   const [areaFilter, setAreaFilter] = useState<Area[]>([]);
   const [methodFilter, setMethodFilter] = useState<Method[]>([]);
   const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType[]>([]);
@@ -326,6 +322,13 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
       .filter((i) => (q ? i.path.toLowerCase().includes(q) : true))
       .sort((a, b) => (sortDir === "desc" ? sortValue(b) - sortValue(a) : sortValue(a) - sortValue(b)));
   }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query, sortKey, sortDir]);
+
+  // Reports the currently visible (filtered + sorted) row order up to the
+  // parent, so the investigation drawer can offer "next/previous" navigation
+  // through exactly what's on screen right now, not just raw dataset order.
+  useEffect(() => {
+    onVisibleIssuesChange?.(filtered.map((i) => i.id));
+  }, [filtered, onVisibleIssuesChange]);
 
   // Per-option counts shown inside each filter dropdown. Each dropdown's
   // counts are computed from every *other* active filter (area/method/

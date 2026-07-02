@@ -1,10 +1,8 @@
-import { useState } from "react";
-import { ArrowLeft, CircleCheck, FileEdit, MessageSquareWarning, SearchCheck } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { CircleCheck, FileEdit, MessageSquareWarning, SearchCheck } from "lucide-react";
 import type { DiffStatus, Issue, RecommendedAction } from "../lib/types";
-import { computeRisk } from "../lib/scoring";
-import { ACTION_LABELS, formatRelativeTime } from "../lib/scoring";
-import { ActionBadge, AreaBadge, MethodBadge } from "./Badges";
-import { AlertCard } from "../design-system/components/AlertCard";
+import { ACTION_LABELS, formatRelativeTime, formatCompactNumber } from "../lib/scoring";
+import { ActionBadge, IssueTypeBadge, MethodBadge } from "./Badges";
 import { Button } from "../design-system/components/Button";
 
 const DIFF_STYLES: Record<DiffStatus, string> = {
@@ -23,72 +21,46 @@ const DIFF_LABEL: Record<DiffStatus, string> = {
 
 const ACTIONS: { action: RecommendedAction; icon: typeof SearchCheck; helper: string }[] = [
   { action: "investigate", icon: SearchCheck, helper: "Open a security ticket for hands-on review of suspicious or undocumented behavior." },
-  { action: "update_spec", icon: FileEdit, helper: "Traffic reflects intended, legitimate behavior — update the spec to match it." },
-  { action: "notify_dev", icon: MessageSquareWarning, helper: "Ownership or intent is unclear — ask the owning team to confirm before deciding." },
+  { action: "update_spec", icon: FileEdit, helper: "Traffic reflects intended, legitimate behavior, so update the spec to match it." },
+  { action: "notify_dev", icon: MessageSquareWarning, helper: "Ownership or intent is unclear, so ask the owning team to confirm before deciding." },
   { action: "no_action", icon: CircleCheck, helper: "Low-risk drift, deprecated endpoint, or already-known issue. Dismiss for now." },
 ];
 
-export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => void }) {
+export function Investigation({ issue }: { issue: Issue }) {
   const [resolvedAction, setResolvedAction] = useState<RecommendedAction | null>(null);
-  const risk = computeRisk(issue.issueType, issue.area, issue.traffic7d, issue.lastSeenMinutesAgo);
 
   return (
     <div className="px-6 py-6">
-      <Button variant="ghost" size="sm" iconLeft={<ArrowLeft size={14} />} onClick={onBack} style={{ marginBottom: 24 }}>
-        Close
-      </Button>
-
       {/* Header */}
-      <AlertCard
-        severity={issue.severity}
-        title={
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <MethodBadge method={issue.method} />
-            <span style={{ fontFamily: "var(--font-mono)", fontWeight: 800 }}>{issue.path}</span>
-          </span>
-        }
-        meta={`Traffic: ${issue.traffic7d.toLocaleString()} reqs (7d)  ·  Auth: ${issue.authMethod}  ·  Error rate: ${issue.errorRate}%`}
-        timestamp={formatRelativeTime(issue.lastSeenMinutesAgo)}
-        actions={<AreaBadge area={issue.area} />}
-      />
-
-      {/* Risk rationale */}
-      <div className="mt-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:100ms] dark:border-slate-800/60 dark:bg-slate-900/50">
-        <h2 className="text-sm font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-3">Analysis Rationale</h2>
-        <p className="text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">{issue.rationale}</p>
-
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-4">
-          {[
-            { label: "Issue type", value: risk.issueTypeScore, max: 40 },
-            { label: "Area sensitivity", value: risk.areaScore, max: 30 },
-            { label: "Traffic volume", value: risk.trafficScore, max: 20 },
-            { label: "Recency", value: risk.recencyScore, max: 10 },
-          ].map((f) => (
-            <div key={f.label}>
-              <div className="flex items-baseline justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">
-                <span>{f.label}</span>
-                <span className="font-mono text-slate-900 dark:text-white">
-                  {f.value}/{f.max}
-                </span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-                <div 
-                  className="h-full rounded-full bg-indigo-600 transition-all duration-1000 ease-out" 
-                  style={{ width: `${(f.value / f.max) * 100}%` }} 
-                />
-              </div>
-            </div>
-          ))}
+      <div>
+        <div className="flex items-center gap-2.5">
+          <MethodBadge method={issue.method} />
+          <h1 className="font-mono text-xl font-extrabold text-slate-900 dark:text-white">{issue.path}</h1>
         </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MetaTile label="Area" value={issue.area} />
+          <MetaTile label="Traffic" value={`${formatCompactNumber(issue.traffic7d)} req`} />
+          <MetaTile label="Auth" value={issue.authMethod} />
+          <MetaTile label="Last seen" value={formatRelativeTime(issue.lastSeenMinutesAgo)} />
+        </div>
+      </div>
+
+      {/* Rationale */}
+      <div className="mt-6 rounded-[12px] border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:100ms] dark:border-slate-800/60 dark:bg-slate-900/50">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Endpoint Issue Explanation</h2>
+          <IssueTypeBadge issueType={issue.issueType} />
+        </div>
+        <p className="text-base font-medium leading-relaxed text-slate-700 dark:text-slate-300">
+          <HighlightedText text={issue.rationale} terms={[issue.area, `${issue.traffic7d.toLocaleString()} requests`]} />
+        </p>
       </div>
 
       {/* Spec vs observed */}
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 animate-slide-up [animation-delay:200ms]">
-        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Expected Specification</h3>
-          </div>
+        <div className="rounded-[12px] border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+          <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Expected Specification</h3>
           {issue.specSnippet ? (
             <div className="space-y-2 font-mono text-xs">
               {Object.entries(issue.specSnippet).map(([k, v]) =>
@@ -108,11 +80,8 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
           )}
         </div>
 
-        <div className="rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Live Traffic Observation</h3>
-          </div>
+        <div className="rounded-[12px] border border-slate-200/60 bg-white/50 p-6 glass shadow-sm dark:border-slate-800/60 dark:bg-slate-900/50">
+          <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-white">Live Traffic Observation</h3>
           {issue.observedSnippet ? (
             <div className="space-y-2 font-mono text-xs">
               {Object.entries(issue.observedSnippet).map(([k, v]) =>
@@ -133,23 +102,10 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
         </div>
       </div>
 
-      {issue.fieldDiffs.some((d) => d.status === "mismatch" && d.note) && (
-        <div className="mt-6 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs font-bold text-amber-700 dark:text-amber-400 animate-slide-up [animation-delay:250ms]">
-          {issue.fieldDiffs
-            .filter((d) => d.status === "mismatch" && d.note)
-            .map((d) => (
-              <p key={d.field} className="flex items-start gap-2">
-                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
-                <span><span className="uppercase text-[9px] tracking-widest opacity-60 mr-1">{d.field}:</span> {d.note}</span>
-              </p>
-            ))}
-        </div>
-      )}
-
       {/* Evidence */}
       {(issue.sampleRequestBody || issue.sampleResponseBody) && (
-        <div className="mt-6 rounded-2xl border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Traffic Evidence</h3>
+        <div className="mt-6 rounded-[12px] border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Traffic Evidence</h3>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {issue.sampleRequestBody && (
               <div>
@@ -216,6 +172,38 @@ export function Investigation({ issue, onBack }: { issue: Issue; onBack: () => v
   );
 }
 
+// Highlights data-driven terms inside a body of text (e.g. the area name,
+// the traffic count) so the reader can spot, at a glance, which words in the
+// rationale are actual product data rather than descriptive prose.
+function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
+  const escaped = terms.filter(Boolean).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (escaped.length === 0) return <>{text}</>;
+  const pattern = new RegExp(`(${escaped.join("|")})`, "g");
+  const parts = text.split(pattern);
+  return (
+    <>
+      {parts.map((part, i) =>
+        terms.includes(part) ? (
+          <mark key={i} className="rounded bg-gray-200 px-1 py-0.5 font-semibold text-slate-900 dark:bg-slate-700 dark:text-white">
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
+function MetaTile({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-[8px] border border-slate-200/60 bg-white/60 px-3.5 py-2.5 dark:border-slate-800/60 dark:bg-slate-900/40">
+      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">{label}</div>
+      <div className="mt-1 truncate text-sm font-bold text-slate-800 dark:text-slate-200">{value}</div>
+    </div>
+  );
+}
+
 function FieldRow({
   field,
   type,
@@ -238,7 +226,7 @@ function FieldRow({
       <span>
         {field}: <span className="opacity-70">{type}</span>
       </span>
-      {status !== "match" && <span className="text-[10px] font-semibold uppercase tracking-wide">{DIFF_LABEL[status]}</span>}
+      {status !== "match" && <span className="text-xs font-medium">{DIFF_LABEL[status]}</span>}
     </div>
   );
 }

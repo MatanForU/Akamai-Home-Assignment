@@ -9,7 +9,15 @@ export function MatchScoreRing({ pct, size = 176 }: { pct: number; size?: number
 
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct / 100);
-  const color = "#6366f1";
+
+  // Traffic-light severity color: full match is the only "green" state —
+  // anything less means at least one endpoint has drifted from spec, and
+  // the ring should read as progressively more urgent the further it falls.
+  const color =
+    pct >= 100 ? "#22c55e" // green-500 — fully matched
+    : pct >= 80 ? "#f97316" // orange-500 — mostly matched
+    : pct >= 60 ? "#eab308" // yellow-500 — marginal
+    : "#ef4444"; // red-500 — poor match, needs attention
 
   return (
     <svg width={box} height={box} viewBox={`0 0 ${box} ${box}`} className="shrink-0">

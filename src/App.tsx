@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { ChevronDown, ChevronUp, Moon, Sun, X } from "lucide-react";
 import akamaiLogo from "./assets/akamai-logo.svg";
 import { Overview } from "./components/Overview";
 import { Investigation } from "./components/Investigation";
@@ -24,8 +24,16 @@ function useDarkMode() {
 
 function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [visibleIssueIds, setVisibleIssueIds] = useState<string[]>([]);
   const [dark, setDark] = useDarkMode();
   const selectedIssue = issues.find((i) => i.id === selectedId) ?? null;
+
+  // Navigate through whatever's currently visible in the (filtered + sorted)
+  // table, not raw dataset order, so prev/next matches what the user was
+  // actually looking at when they opened the drawer.
+  const currentIndex = selectedId ? visibleIssueIds.indexOf(selectedId) : -1;
+  const prevId = currentIndex > 0 ? visibleIssueIds[currentIndex - 1] : null;
+  const nextId = currentIndex >= 0 && currentIndex < visibleIssueIds.length - 1 ? visibleIssueIds[currentIndex + 1] : null;
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -69,7 +77,7 @@ function App() {
       </header>
 
       <main id="main">
-        <Overview onSelectIssue={setSelectedId} />
+        <Overview onSelectIssue={setSelectedId} onVisibleIssuesChange={setVisibleIssueIds} />
       </main>
 
       {selectedIssue && (
@@ -78,8 +86,51 @@ function App() {
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-fade-in"
             onClick={() => setSelectedId(null)}
           />
+          {/* Close FAB lives outside the drawer's own scroll container, so it
+              never scrolls away with the content and stays visually
+              separate from the panel it's closing. Anchored just outside
+              the drawer's left edge when there's backdrop room to show it
+              there, with an even 1rem gap on both sides for symmetry; falls
+              back to the drawer's own top-left corner (same 1rem margin) on
+              narrow screens where the drawer is full-width. */}
+          <button
+            type="button"
+            onClick={() => setSelectedId(null)}
+            aria-label="Close"
+            className="fixed top-6 z-[60] flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-white text-slate-600 shadow-lg ring-1 ring-slate-200 transition-all duration-200 hover:scale-105 hover:bg-slate-50 active:scale-95 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700 animate-fade-in"
+            style={{ left: "max(1rem, calc(100vw - 72rem - 3.75rem))" }}
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {/* Prev/next navigate through the table's currently visible
+              (filtered + sorted) rows rather than closing back to the
+              blurred-out table just to pick another row. */}
+          <div
+            className="fixed z-[60] flex w-11 flex-col overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 animate-fade-in"
+            style={{ top: "5rem", left: "max(1rem, calc(100vw - 72rem - 3.75rem))" }}
+          >
+            <button
+              type="button"
+              onClick={() => prevId && setSelectedId(prevId)}
+              disabled={!prevId}
+              aria-label="Previous issue"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              <ChevronUp className="h-5 w-5" />
+            </button>
+            <div className="h-px w-full bg-slate-200 dark:bg-slate-700" />
+            <button
+              type="button"
+              onClick={() => nextId && setSelectedId(nextId)}
+              disabled={!nextId}
+              aria-label="Next issue"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-30 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              <ChevronDown className="h-5 w-5" />
+            </button>
+          </div>
           <div className="fixed inset-y-0 right-0 z-50 w-full max-w-6xl overflow-y-auto bg-[var(--background)] shadow-2xl border-l border-slate-200/60 dark:border-slate-800/60 animate-drawer-slide-in">
-            <Investigation issue={selectedIssue} onBack={() => setSelectedId(null)} />
+            <Investigation issue={selectedIssue} />
           </div>
         </>
       )}
