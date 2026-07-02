@@ -34,6 +34,9 @@ export interface Issue {
   issueType: IssueType;
   severity: Severity;
   traffic7d: number;
+  // Minutes since the endpoint was last observed/checked. Bounded to the
+  // 7-day retention window (max 60*24*7) — the platform never reports a
+  // last-seen value older than the data it actually retains.
   lastSeenMinutesAgo: number;
   authMethod: string;
   errorRate: number;

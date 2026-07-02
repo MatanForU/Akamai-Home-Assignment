@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, ChevronDown, ChevronRight, Check, Search, SearchX, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, ChevronDown, ChevronRight, Check, Search, SearchX, X, type LucideIcon } from "lucide-react";
 import type { Area, Issue, IssueType } from "../lib/types";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -36,18 +36,22 @@ const ISSUE_TYPE_OPTIONS: IssueType[] = ["shadowApi", "ghostEndpoint", "undocume
 
 const SPEC_ISSUE_TYPES: IssueType[] = ["paramMismatch", "undocumentedParam", "staleParam", "ghostEndpoint"];
 
+// Compact display for large stat-strip numbers (e.g. 294800 -> "294.8K").
+// Below 1,000 falls back to a plain, comma-formatted number.
+function formatCompactNumber(n: number): string {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return `${Number.isInteger(k) ? k : k.toFixed(1)}K`;
+  }
+  return n.toLocaleString();
+}
+
 const WINDOW_OPTIONS: { minutes: number; label: string }[] = [
   { minutes: 60 * 24, label: "Last 24 hours" },
   { minutes: 60 * 24 * 3, label: "Last 3 days" },
   { minutes: 60 * 24 * 5, label: "Last 5 days" },
   { minutes: 60 * 24 * 7, label: "Last 7 days" },
 ];
-
-const AREA_META: Record<string, { subtitle: string; color: string }> = {
-  Store: { subtitle: "Payments · Orders", color: "#ef4444" },
-  User:  { subtitle: "Account · Identity", color: "#6366f1" },
-  Pet:   { subtitle: "Catalog", color: "#f97316" },
-};
 
 const ACTION_META = [
   { action: "investigate" as const, label: "Investigate",        color: "#ef4444" },
@@ -69,12 +73,26 @@ function useAnchoredMenu(isOpen: boolean) {
   const anchorRef = useRef<HTMLButtonElement>(null);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
+  // Recompute continuously while open, not just once on open. The trigger
+  // sits in a sticky bar, so its viewport position keeps changing as the
+  // page scrolls (or the sticky bar locks into place) — without this, the
+  // menu stays pinned to wherever the button happened to be the instant it
+  // was clicked, and visibly detaches from it on any subsequent scroll.
   useLayoutEffect(() => {
-    if (isOpen && anchorRef.current) {
-      setRect(anchorRef.current.getBoundingClientRect());
-    } else {
+    if (!isOpen) {
       setRect(null);
+      return;
     }
+    const update = () => {
+      if (anchorRef.current) setRect(anchorRef.current.getBoundingClientRect());
+    };
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
   }, [isOpen]);
 
   return { anchorRef, rect };
@@ -87,6 +105,8 @@ interface MultiSelectOptionsProps<T extends string> {
   placeholder: string;
   labelFormatter?: (value: T) => string;
   dotColorFn?: (value: T) => string;
+  iconFn?: (value: T) => LucideIcon;
+  countFn?: (value: T) => number;
 }
 
 function MultiSelectOptions<T extends string>({
@@ -96,6 +116,8 @@ function MultiSelectOptions<T extends string>({
   placeholder,
   labelFormatter,
   dotColorFn,
+  iconFn,
+  countFn,
 }: MultiSelectOptionsProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const { anchorRef, rect } = useAnchoredMenu(isOpen);
@@ -139,45 +161,50 @@ function MultiSelectOptions<T extends string>({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div
-            className="fixed z-50 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-up dark:border-slate-800 dark:bg-slate-900"
+            className="fixed z-50 w-64 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-up dark:border-slate-800 dark:bg-slate-900"
             style={{ top: rect.bottom + 6, left: rect.left }}
           >
-            {hasSelection && (
-              <button
-                type="button"
-                onClick={() => onChange([])}
-                className="flex w-full cursor-pointer items-center justify-between border-b border-slate-100 px-3.5 py-2 text-left text-xs font-medium text-slate-400 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
-              >
-                <span>Clear all</span>
-                <X className="h-3 w-3" />
-              </button>
-            )}
             {options.map((opt) => {
               const label = labelFormatter ? labelFormatter(opt) : opt;
               const isSelected = values.includes(opt);
+              const Icon = iconFn ? iconFn(opt) : null;
               return (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => toggle(opt)}
-                  className={`flex w-full cursor-pointer items-center justify-between px-3.5 py-2 text-left text-xs font-medium transition-colors ${
+                  className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3.5 py-2 text-left text-xs font-medium transition-colors ${
                     isSelected
                       ? "bg-indigo-50/50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400"
                       : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
                   }`}
                 >
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex min-w-0 items-center gap-1.5">
                     {dotColorFn && <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColorFn(opt)}`} />}
-                    {label}
+                    {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+                    <span className="whitespace-nowrap">{label}</span>
                   </span>
-                  <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${
-                    isSelected ? "border-indigo-600 bg-indigo-600 dark:border-indigo-400 dark:bg-indigo-400" : "border-slate-300 dark:border-slate-600"
-                  }`}>
-                    {isSelected && <Check className="h-2.5 w-2.5 text-white" />}
+                  <span className="flex shrink-0 items-center gap-2">
+                    {countFn && <span className="text-[10px] font-semibold tabular-nums text-slate-400">{countFn(opt)}</span>}
+                    <span className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded border transition-colors ${
+                      isSelected ? "border-indigo-600 bg-indigo-600 dark:border-indigo-400 dark:bg-indigo-400" : "border-slate-300 dark:border-slate-600"
+                    }`}>
+                      {isSelected && <Check className="h-2.5 w-2.5 text-white" />}
+                    </span>
                   </span>
                 </button>
               );
             })}
+            {hasSelection && (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="flex w-full cursor-pointer items-center justify-between border-t border-slate-100 px-3.5 py-2 text-left text-xs font-medium text-slate-400 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+              >
+                <span>Clear all</span>
+                <X className="h-3 w-3" />
+              </button>
+            )}
           </div>
         </>,
         document.body
@@ -209,7 +236,7 @@ function WindowPicker({ value, onChange }: { value: number; onChange: (minutes: 
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div
             className="fixed z-50 w-44 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-up dark:border-slate-800 dark:bg-slate-900"
-            style={{ top: rect.bottom + 6, right: window.innerWidth - rect.right }}
+            style={{ top: rect.bottom + 6, left: rect.right - 176 }}
           >
             {WINDOW_OPTIONS.map((opt) => (
               <button
@@ -251,36 +278,15 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
   // Issues observed within the selected lookback window. Narrowing the window
   // (e.g. 3 days instead of 7) surfaces recent activity that could otherwise
   // get buried among everything seen across the full retention period.
-  // Ghost endpoints are the one exception: by definition they had zero traffic
-  // across the whole retention period, so that fact holds regardless of which
-  // sub-window you're looking at — narrowing the window can only ever confirm
-  // continued silence, never contradict it. They stay visible in every window.
+  // Applies uniformly to every issue type, including ghost endpoints — same
+  // rule as every other filter, no special-casing.
   const windowedIssues = useMemo(
-    () => issues.filter((i) => i.issueType === "ghostEndpoint" || i.lastSeenMinutesAgo <= windowMinutes),
+    () => issues.filter((i) => i.lastSeenMinutesAgo <= windowMinutes),
     [windowMinutes]
   );
 
-  // Spec-vs-traffic match is normally an existence check over the full spec,
-  // but the user wants the whole screen to move with the date picker, so we
-  // derive a window-aware version here: an endpoint counts as "matched" as
-  // long as none of its currently-visible issues (within the window) affect
-  // it. Shadow APIs are excluded from this count since they're extra activity
-  // outside the spec, not a spec endpoint failing to match.
-  const matchedInWindow = useMemo(() => {
-    const affected = new Set(
-      windowedIssues.filter((i) => SPEC_ISSUE_TYPES.includes(i.issueType)).map((i) => `${i.method} ${i.path}`)
-    );
-    return Math.max(SPEC_META.totalSpecEndpoints - affected.size, 0);
-  }, [windowedIssues]);
-  const matchPctInWindow = Math.round((matchedInWindow / SPEC_META.totalSpecEndpoints) * 100);
-
   const scrollToTable = () => {
     tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const filterByArea = (area: Area) => {
-    setAreaFilter([area]);
-    scrollToTable();
   };
 
   const filterByAction = (action: ActionKey) => {
@@ -321,34 +327,96 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
       .sort((a, b) => (sortDir === "desc" ? sortValue(b) - sortValue(a) : sortValue(a) - sortValue(b)));
   }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query, sortKey, sortDir]);
 
-  const shadowApis = useMemo(
-    () => windowedIssues.filter((i) => i.issueType === "shadowApi").sort((a, b) => b.traffic7d - a.traffic7d),
-    [windowedIssues]
+  // Per-option counts shown inside each filter dropdown. Each dropdown's
+  // counts are computed from every *other* active filter (area/method/
+  // issue-type/action/search/date window) but deliberately excludes its own
+  // filter, so a row's number always answers "how many would I get if I
+  // also picked this," rather than zeroing out once you've made a selection.
+  const facetCounts = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const base = windowedIssues.filter((i) => (q ? i.path.toLowerCase().includes(q) : true));
+
+    const areaBase = base
+      .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
+      .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true))
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+
+    const methodBase = base
+      .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
+      .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true))
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+
+    const issueTypeBase = base
+      .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
+      .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+
+    const actionBase = base
+      .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
+      .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
+      .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true));
+
+    const tally = <K extends string>(list: Issue[], key: (i: Issue) => K): Partial<Record<K, number>> => {
+      const counts: Partial<Record<K, number>> = {};
+      for (const i of list) {
+        const k = key(i);
+        counts[k] = (counts[k] ?? 0) + 1;
+      }
+      return counts;
+    };
+
+    return {
+      area: tally(areaBase, (i) => i.area),
+      method: tally(methodBase, (i) => i.method as Method),
+      issueType: tally(issueTypeBase, (i) => i.issueType),
+      action: tally(actionBase, (i) => i.recommendedAction as ActionKey),
+    };
+  }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query]);
+
+  // The overview stat strip is driven by `filtered` rather than `windowedIssues`
+  // so that the area/method/issue-type/action/search filters — not just the
+  // date picker — move the banner numbers too, same as they move the table.
+  const totalTraffic = useMemo(
+    () => filtered.reduce((sum, i) => sum + i.traffic7d, 0),
+    [filtered]
   );
 
-  const sensitiveAreaData = useMemo(
-    () =>
-      AREAS.map((area) => ({
-        area,
-        count: windowedIssues.filter((i) => i.area === area).length,
-        ...AREA_META[area],
-      })).sort((a, b) => b.count - a.count),
-    [windowedIssues]
+  const visibleAreaCount = useMemo(
+    () => new Set(filtered.map((i) => i.area)).size,
+    [filtered]
   );
 
+  // Spec-vs-traffic match is normally an existence check over the full spec,
+  // but the user wants the whole screen to move with the filters (date
+  // picker included), so we derive a filter-aware version here: an endpoint
+  // counts as "matched" as long as none of its currently-visible issues
+  // affect it. Shadow APIs are excluded from this count since they're extra
+  // activity outside the spec, not a spec endpoint failing to match.
+  const matchedInWindow = useMemo(() => {
+    const affected = new Set(
+      filtered.filter((i) => SPEC_ISSUE_TYPES.includes(i.issueType)).map((i) => `${i.method} ${i.path}`)
+    );
+    return Math.max(SPEC_META.totalSpecEndpoints - affected.size, 0);
+  }, [filtered]);
+  const matchPctInWindow = Math.round((matchedInWindow / SPEC_META.totalSpecEndpoints) * 100);
+
+  // These three widgets now key off `filtered` (every active filter) rather
+  // than `windowedIssues` (date only), so they stay consistent with the stat
+  // strip and the table below — narrowing by area/method/issue-type/action/
+  // search moves everything on the page together.
   const topTrafficIssues = useMemo(
-    () => [...windowedIssues].sort((a, b) => b.traffic7d - a.traffic7d).slice(0, 5),
-    [windowedIssues]
+    () => [...filtered].sort((a, b) => b.traffic7d - a.traffic7d).slice(0, 5),
+    [filtered]
   );
 
   const recentIssues = useMemo(
-    () => [...windowedIssues].sort((a, b) => a.lastSeenMinutesAgo - b.lastSeenMinutesAgo).slice(0, 5),
-    [windowedIssues]
+    () => [...filtered].sort((a, b) => a.lastSeenMinutesAgo - b.lastSeenMinutesAgo).slice(0, 5),
+    [filtered]
   );
 
   const actionCounts = useMemo(
-    () => ACTION_META.map((m) => ({ ...m, count: windowedIssues.filter((i) => i.recommendedAction === m.action).length })),
-    [windowedIssues]
+    () => ACTION_META.map((m) => ({ ...m, count: filtered.filter((i) => i.recommendedAction === m.action).length })),
+    [filtered]
   );
 
   const hasActiveFilters = Boolean(areaFilter.length || methodFilter.length || issueTypeFilter.length || actionFilter.length || query);
@@ -363,103 +431,106 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
 
   return (
     <div className="mx-auto max-w-[1680px] px-6 py-5 sm:px-10 xl:px-12">
-      <div className="mb-5 flex items-start justify-between gap-4 animate-slide-up">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Endpoints</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 font-medium">
-            Comparing <span className="font-semibold text-slate-600 dark:text-slate-300">{SPEC_META.name}</span> against{" "}
-            {(WINDOW_OPTIONS.find((o) => o.minutes === windowMinutes) ?? WINDOW_OPTIONS[WINDOW_OPTIONS.length - 1]).label.toLowerCase()} of production traffic
-          </p>
-        </div>
-        <WindowPicker value={windowMinutes} onChange={setWindowMinutes} />
+      <div className="mb-5 animate-slide-up">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Endpoints</h1>
       </div>
 
-      {/* Top summary row */}
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3 animate-slide-up [animation-delay:100ms]">
-        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="mb-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Spec vs Traffic</h2>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">How closely the spec matches real traffic</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <MatchScoreRing pct={matchPctInWindow} />
-            <div>
-              <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">
-                {matchedInWindow} / {SPEC_META.totalSpecEndpoints}
-              </div>
-              <div className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-                Endpoints align with observed traffic signatures.
-              </div>
+      {/* Filter bar — sticky so filtering stays reachable while scrolling the page */}
+      <div className="sticky top-16 z-20 mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white/95 px-5 py-3 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-950/95">
+        <div className="relative" style={{ width: 256 }}>
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search endpoints..."
+            icon={<Search size={15} />}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        <MultiSelectOptions
+          values={areaFilter}
+          onChange={setAreaFilter}
+          options={AREAS}
+          placeholder="All areas"
+          countFn={(a: Area) => facetCounts.area[a] ?? 0}
+        />
+
+        <MultiSelectOptions
+          values={methodFilter}
+          onChange={setMethodFilter}
+          options={METHOD_OPTIONS}
+          placeholder="All methods"
+          dotColorFn={(m) => METHOD_DOT[m]}
+          countFn={(m: Method) => facetCounts.method[m] ?? 0}
+        />
+
+        <MultiSelectOptions
+          values={issueTypeFilter}
+          onChange={setIssueTypeFilter}
+          options={ISSUE_TYPE_OPTIONS}
+          placeholder="All issue types"
+          labelFormatter={(t: IssueType) => ISSUE_TYPE_LABELS[t]}
+          iconFn={(t: IssueType) => ISSUE_TYPE_ICONS[t]}
+          countFn={(t: IssueType) => facetCounts.issueType[t] ?? 0}
+        />
+
+        <MultiSelectOptions
+          values={actionFilter}
+          onChange={setActionFilter}
+          options={ACTION_OPTIONS}
+          placeholder="All required actions"
+          labelFormatter={(a: ActionKey) => ACTION_LABELS[a]}
+          dotColorFn={(a) => ACTION_DOT[a]}
+          countFn={(a: ActionKey) => facetCounts.action[a] ?? 0}
+        />
+
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="cursor-pointer rounded-[8px] px-4 py-2.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors dark:text-indigo-400 dark:hover:bg-indigo-950/30"
+          >
+            Reset
+          </button>
+        )}
+
+        <div className="ml-auto">
+          <WindowPicker value={windowMinutes} onChange={setWindowMinutes} />
+        </div>
+      </div>
+
+      {/* Top summary strip */}
+      <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5 animate-slide-up [animation-delay:100ms]">
+        <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white/50 py-4 pl-8 pr-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <MatchScoreRing pct={matchPctInWindow} size={104} />
+          <div>
+            <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">
+              {formatCompactNumber(matchedInWindow)} / {formatCompactNumber(SPEC_META.totalSpecEndpoints)}
             </div>
+            <div className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">Matched to spec</div>
           </div>
         </div>
-
-        {/* Shadow APIs */}
-        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="mb-3">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Shadow APIs</h2>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Active in production, absent from spec</p>
-          </div>
-          <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">{shadowApis.length}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Shadow Endpoints</span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            {shadowApis.map((issue) => {
-              const maxT = Math.max(...shadowApis.map((s) => s.traffic7d), 1);
-              return (
-                <button
-                  key={issue.id}
-                  type="button"
-                  onClick={() => onSelectIssue(issue.id)}
-                  title={`Investigate ${issue.method} ${issue.path}`}
-                  className="group relative w-full cursor-pointer overflow-hidden rounded-[8px] bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-left border border-transparent transition-all hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm hover:-translate-y-px active:translate-y-0 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-                >
-                  <div className="absolute inset-y-0 left-0 rounded-l-[8px] bg-indigo-100/60 dark:bg-indigo-900/20 transition-all" style={{ width: `${(issue.traffic7d / maxT) * 100}%` }} />
-                  <div className="relative flex items-center gap-2">
-                    <MethodBadge method={issue.method} />
-                    <span className="font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300 flex-1 truncate">{issue.path}</span>
-                    <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 shrink-0">{issue.traffic7d.toLocaleString()}<span className="text-[9px] font-medium text-slate-400 ml-0.5">req</span></span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex flex-col justify-center rounded-2xl border border-gray-100 bg-white/50 py-4 pl-8 pr-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">{formatCompactNumber(SPEC_META.totalSpecEndpoints)}</div>
+          <div className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">Endpoints</div>
         </div>
-
-        {/* Sensitive Area Exposure */}
-        <div className="rounded-2xl border border-gray-100 bg-white/50 p-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Sensitive Area Exposure</h2>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Issues in high-risk business domains</p>
-          </div>
-          <div className="flex flex-col gap-4">
-            {sensitiveAreaData.map(({ area, count, subtitle, color }) => (
-              <button
-                key={area}
-                type="button"
-                onClick={() => filterByArea(area)}
-                title={`View all ${area} issues`}
-                className="group flex w-full cursor-pointer items-center gap-3 rounded-[8px] border border-transparent -m-1.5 p-1.5 text-left transition-all hover:border-indigo-200 hover:bg-slate-50 hover:shadow-sm dark:hover:border-indigo-800 dark:hover:bg-slate-800/50"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between mb-1.5">
-                    <div>
-                      <span className="text-[12px] font-bold text-slate-800 dark:text-slate-200">{area}</span>
-                      <span className="ml-1.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">{subtitle}</span>
-                    </div>
-                    <span className="flex items-center gap-1 ml-2">
-                      <span className="text-base font-extrabold text-slate-900 dark:text-white">{count}</span>
-                    </span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${(count / windowedIssues.length) * 100}%`, background: color }} />
-                  </div>
-                  <div className="mt-1 text-[10px] font-medium text-slate-400">{Math.round((count / windowedIssues.length) * 100)}% of all issues</div>
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-col justify-center rounded-2xl border border-gray-100 bg-white/50 py-4 pl-8 pr-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">{formatCompactNumber(filtered.length)}</div>
+          <div className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">Issues</div>
+        </div>
+        <div className="flex flex-col justify-center rounded-2xl border border-gray-100 bg-white/50 py-4 pl-8 pr-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">{formatCompactNumber(visibleAreaCount)}</div>
+          <div className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">Areas</div>
+        </div>
+        <div className="flex flex-col justify-center rounded-2xl border border-gray-100 bg-white/50 py-4 pl-8 pr-4 glass dark:border-slate-800/60 dark:bg-slate-900/50">
+          <div className="text-4xl font-extrabold leading-none text-slate-900 dark:text-white">{formatCompactNumber(totalTraffic)}</div>
+          <div className="mt-2 text-base font-medium text-slate-500 dark:text-slate-400">Requests</div>
         </div>
       </div>
 
@@ -562,69 +633,7 @@ export function Overview({ onSelectIssue }: { onSelectIssue: (id: string) => voi
       </div>
 
       {/* Priority queue */}
-      <div ref={tableRef} className="mt-6 scroll-mt-20 rounded-2xl border border-gray-100 bg-white/50 glass animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-3 sm:flex-row sm:items-center dark:border-slate-800">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative" style={{ width: 256 }}>
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search endpoints..."
-                icon={<Search size={15} />}
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-900 dark:hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-
-            <MultiSelectOptions
-              values={areaFilter}
-              onChange={setAreaFilter}
-              options={AREAS}
-              placeholder="All areas"
-            />
-
-            <MultiSelectOptions
-              values={methodFilter}
-              onChange={setMethodFilter}
-              options={METHOD_OPTIONS}
-              placeholder="All methods"
-              dotColorFn={(m) => METHOD_DOT[m]}
-            />
-
-            <MultiSelectOptions
-              values={issueTypeFilter}
-              onChange={setIssueTypeFilter}
-              options={ISSUE_TYPE_OPTIONS}
-              placeholder="All issue types"
-              labelFormatter={(t: IssueType) => ISSUE_TYPE_LABELS[t]}
-            />
-
-            <MultiSelectOptions
-              values={actionFilter}
-              onChange={setActionFilter}
-              options={ACTION_OPTIONS}
-              placeholder="All required actions"
-              labelFormatter={(a: ActionKey) => ACTION_LABELS[a]}
-              dotColorFn={(a) => ACTION_DOT[a]}
-            />
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="cursor-pointer rounded-[8px] px-4 py-2.5 text-xs font-bold text-indigo-600 hover:bg-indigo-50 transition-colors dark:text-indigo-400 dark:hover:bg-indigo-950/30"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-        </div>
-
+      <div ref={tableRef} className="mt-6 scroll-mt-36 rounded-2xl border border-gray-100 bg-white/50 glass animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50 overflow-hidden">
         {/* Column headers */}
         <div
           className="grid border-b border-slate-100 bg-slate-50/50 px-7 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:border-slate-800 dark:bg-slate-900/30"

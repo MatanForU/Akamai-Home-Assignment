@@ -1,44 +1,44 @@
 
-const BOX = 176;
-const CENTER = BOX / 2;
-const RADIUS = 68;
-const STROKE_WIDTH = 14;
-const VALUE_FONT = 32;
-const LABEL_FONT = 11;
+export function MatchScoreRing({ pct, size = 176 }: { pct: number; size?: number }) {
+  const box = size;
+  const center = box / 2;
+  const radius = box * 0.386;
+  const strokeWidth = box * 0.08;
+  const valueFont = box * 0.182;
+  const labelFont = Math.max(box * 0.0625, 9);
 
-export function MatchScoreRing({ pct }: { pct: number }) {
-  const circumference = 2 * Math.PI * RADIUS;
+  const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - pct / 100);
   const color = "#6366f1";
 
   return (
-    <svg width={BOX} height={BOX} viewBox={`0 0 ${BOX} ${BOX}`} className="shrink-0">
+    <svg width={box} height={box} viewBox={`0 0 ${box} ${box}`} className="shrink-0">
       <circle
-        cx={CENTER}
-        cy={CENTER}
-        r={RADIUS}
+        cx={center}
+        cy={center}
+        r={radius}
         fill="none"
         stroke="currentColor"
         className="text-slate-100 dark:text-slate-800"
-        strokeWidth={STROKE_WIDTH}
+        strokeWidth={strokeWidth}
       />
       <circle
-        cx={CENTER}
-        cy={CENTER}
-        r={RADIUS}
+        cx={center}
+        cy={center}
+        r={radius}
         fill="none"
         stroke={color}
-        strokeWidth={STROKE_WIDTH}
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         className="animate-[ring-fill_1s_ease-out]"
-        transform={`rotate(-90 ${CENTER} ${CENTER})`}
+        transform={`rotate(-90 ${center} ${center})`}
       />
-      <text x={CENTER} y={CENTER - 4} textAnchor="middle" fontSize={VALUE_FONT} fontWeight="800" className="fill-slate-900 dark:fill-white font-sans tracking-tight">
+      <text x={center} y={center - 4} textAnchor="middle" fontSize={valueFont} fontWeight="800" className="fill-slate-900 dark:fill-white font-sans tracking-tight">
         {pct}%
       </text>
-      <text x={CENTER} y={CENTER + LABEL_FONT + 6} textAnchor="middle" fontSize={LABEL_FONT} fontWeight="700" className="fill-slate-400 dark:fill-slate-500 uppercase tracking-widest">
+      <text x={center} y={center + labelFont + 6} textAnchor="middle" fontSize={labelFont} fontWeight="700" className="fill-slate-400 dark:fill-slate-500 uppercase tracking-widest">
         matched
       </text>
     </svg>
