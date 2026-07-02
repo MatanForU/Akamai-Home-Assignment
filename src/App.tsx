@@ -44,7 +44,7 @@ function App() {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b border-slate-200/60 glass dark:border-slate-800/60 transition-all">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-6 py-3">
+        <div className="mx-auto flex max-w-full items-center gap-4 px-6 sm:px-10 py-3">
           <div className="flex items-center gap-3">
             <img src={akamaiLogo} alt="Akamai logo" className="h-9 w-auto" />
             <div>
@@ -54,9 +54,9 @@ function App() {
             </div>
           </div>
 
-          <div className="hidden sm:flex items-center gap-3 ml-8 border-l border-slate-200 dark:border-slate-800 pl-8">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-700">Scope</span>
-            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">Fleet Overview</span>
+          <div className="hidden sm:flex items-center gap-1 ml-2 border-l border-slate-200 dark:border-slate-800 pl-4">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-700"></span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Matan Vahaba</span>
           </div>
 
           <button

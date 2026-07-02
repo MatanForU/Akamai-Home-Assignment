@@ -9,7 +9,7 @@ const LABEL_FONT = 11;
 export function MatchScoreRing({ pct }: { pct: number }) {
   const circumference = 2 * Math.PI * RADIUS;
   const offset = circumference * (1 - pct / 100);
-  const color = pct >= 90 ? "#6366f1" : pct >= 75 ? "#f59e0b" : "#ef4444";
+  const color = "#6366f1";
 
   return (
     <svg width={BOX} height={BOX} viewBox={`0 0 ${BOX} ${BOX}`} className="shrink-0">

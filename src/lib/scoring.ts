@@ -1,4 +1,5 @@
 import type { Area, IssueType, RecommendedAction, Severity } from "./types";
+import { Radar, Ghost, FileQuestion, Archive, GitCompare, CheckCircle2, type LucideIcon } from "lucide-react";
 
 // Transparent, additive scoring model. Every issue's severity is explainable
 // as a sum of four named factors instead of a single opaque number, so an
@@ -22,10 +23,9 @@ const ISSUE_TYPE_WEIGHT: Record<IssueType, number> = {
 };
 
 const AREA_WEIGHT: Record<Area, number> = {
-  Payments: 30,
-  Users: 24,
-  Orders: 12,
-  Catalog: 6,
+  Pet: 20,
+  Store: 28,
+  User: 24,
 };
 
 function trafficScore(traffic7d: number): number {
@@ -98,13 +98,11 @@ export function buildRationale(
 ): string {
   const base = `This endpoint is ${ISSUE_TYPE_LABEL[issueType]}.`;
   const areaNote =
-    area === "Payments"
-      ? "Because it belongs to Payments, undocumented behavior here can expose transaction logic or bypass validation that the spec was meant to enforce."
-      : area === "Users"
-        ? "Because it belongs to Users, undocumented behavior here can expose account or identity data outside the spec's intended contract."
-        : area === "Orders"
-          ? "It belongs to Orders, a moderately sensitive area, so the gap is worth tracking but is less likely to be an immediate exposure."
-          : "It belongs to Catalog, a low-sensitivity area, so this is more likely routine drift than a security concern.";
+    area === "Store"
+      ? "Because it belongs to Store, undocumented behavior here can expose order or payment logic and bypass validation the spec was meant to enforce."
+      : area === "User"
+        ? "Because it belongs to User, undocumented behavior here can expose account or identity data outside the spec's intended contract."
+        : "It belongs to Pet, a moderately sensitive area — drift here is worth tracking but is less likely to be an immediate security exposure.";
   const trafficNote =
     traffic7d >= 1000
       ? ` It has seen ${traffic7d.toLocaleString()} requests in the last 7 days, so any gap here affects real, ongoing traffic.`
@@ -138,11 +136,33 @@ export const ISSUE_TYPE_LABELS: Record<IssueType, string> = {
   matched: "Matched",
 };
 
+// One icon per issue type, chosen for what the issue actually represents:
+// Radar = detected in traffic but off the documented map (shadow API)
+// Ghost = documented but no longer "alive" in traffic (ghost endpoint)
+// FileQuestion = a parameter the docs never mentioned (undocumented param)
+// Archive = a parameter the spec keeps but traffic no longer uses (stale param)
+// GitCompare = spec and traffic disagree on shape (parameter mismatch)
+export const ISSUE_TYPE_ICONS: Record<IssueType, LucideIcon> = {
+  shadowApi: Radar,
+  paramMismatch: GitCompare,
+  undocumentedParam: FileQuestion,
+  staleParam: Archive,
+  ghostEndpoint: Ghost,
+  matched: CheckCircle2,
+};
+
 export const ACTION_LABELS: Record<RecommendedAction, string> = {
   investigate: "Investigate",
   update_spec: "Update spec",
   notify_dev: "Notify developer",
   no_action: "No action needed",
+};
+
+export const ACTION_DOT: Record<RecommendedAction, string> = {
+  investigate: "bg-red-500",
+  notify_dev: "bg-indigo-500",
+  update_spec: "bg-emerald-500",
+  no_action: "bg-slate-400",
 };
 
 export function formatRelativeTime(minutesAgo: number): string {

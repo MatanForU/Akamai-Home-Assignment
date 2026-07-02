@@ -1,4 +1,4 @@
-export type Area = "Payments" | "Users" | "Orders" | "Catalog";
+export type Area = "Pet" | "Store" | "User";
 
 export type IssueType =
   | "shadowApi"
