@@ -385,12 +385,12 @@ export function Overview({
   // strip and the table below — narrowing by area/method/issue-type/action/
   // search moves everything on the page together.
   const topTrafficIssues = useMemo(
-    () => [...filtered].sort((a, b) => b.traffic7d - a.traffic7d).slice(0, 5),
+    () => [...filtered].sort((a, b) => b.traffic7d - a.traffic7d).slice(0, 4),
     [filtered]
   );
 
   const recentIssues = useMemo(
-    () => [...filtered].sort((a, b) => a.lastSeenMinutesAgo - b.lastSeenMinutesAgo).slice(0, 5),
+    () => [...filtered].sort((a, b) => a.lastSeenMinutesAgo - b.lastSeenMinutesAgo).slice(0, 4),
     [filtered]
   );
 
@@ -559,24 +559,19 @@ export function Overview({
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Endpoints with latest observed traffic</p>
           </div>
           <div className="flex flex-col gap-1.5">
-            {recentIssues.map((issue) => {
-              const isVeryRecent = issue.lastSeenMinutesAgo < 5;
-              const isRecent = issue.lastSeenMinutesAgo < 60;
-              const timeColor = isVeryRecent ? "text-emerald-600 dark:text-emerald-400" : isRecent ? "text-amber-600 dark:text-amber-400" : "text-slate-400";
-              return (
-                <button
-                  key={issue.id}
-                  type="button"
-                  onClick={() => onSelectIssue(issue.id)}
-                  title={`Investigate ${issue.method} ${issue.path}`}
-                  className="group flex w-full cursor-pointer items-center gap-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-left border border-transparent transition-all hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm hover:-translate-y-px active:translate-y-0 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
-                >
-                  <MethodBadge method={issue.method} />
-                  <span className="font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300 flex-1 truncate">{issue.path}</span>
-                  <span className={`text-[11px] font-bold shrink-0 ${timeColor}`}>{formatRelativeTime(issue.lastSeenMinutesAgo)}</span>
-                </button>
-              );
-            })}
+            {recentIssues.map((issue) => (
+              <button
+                key={issue.id}
+                type="button"
+                onClick={() => onSelectIssue(issue.id)}
+                title={`Investigate ${issue.method} ${issue.path}`}
+                className="group flex w-full cursor-pointer items-center gap-2 rounded-[8px] bg-slate-50 dark:bg-slate-800/60 px-3 py-2 text-left border border-transparent transition-all hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm hover:-translate-y-px active:translate-y-0 dark:hover:border-indigo-800 dark:hover:bg-indigo-950/20"
+              >
+                <MethodBadge method={issue.method} />
+                <span className="font-mono text-[11px] font-medium text-slate-700 dark:text-slate-300 flex-1 truncate">{issue.path}</span>
+                <span className="text-[11px] font-bold shrink-0 text-slate-400 dark:text-slate-500">{formatRelativeTime(issue.lastSeenMinutesAgo)}</span>
+              </button>
+            ))}
           </div>
         </div>
 
