@@ -1,9 +1,10 @@
 import { useState, type ReactNode } from "react";
-import { CircleCheck, FileEdit, MessageSquareWarning, SearchCheck } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Check, ChevronDown, PackageOpen } from "lucide-react";
 import type { DiffStatus, Issue, RecommendedAction } from "../lib/types";
-import { ACTION_LABELS, formatRelativeTime, formatCompactNumber } from "../lib/scoring";
+import { formatRelativeTime, formatCompactNumber } from "../lib/scoring";
 import { ActionBadge, IssueTypeBadge, MethodBadge } from "./Badges";
-import { Button } from "../design-system/components/Button";
+import { useAnchoredMenu } from "../lib/useAnchoredMenu";
 
 const DIFF_STYLES: Record<DiffStatus, string> = {
   extra: "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-300",
@@ -19,23 +20,36 @@ const DIFF_LABEL: Record<DiffStatus, string> = {
   match: "match",
 };
 
-const ACTIONS: { action: RecommendedAction; icon: typeof SearchCheck; helper: string }[] = [
-  { action: "investigate", icon: SearchCheck, helper: "Open a security ticket for hands-on review of suspicious or undocumented behavior." },
-  { action: "update_spec", icon: FileEdit, helper: "Traffic reflects intended, legitimate behavior, so update the spec to match it." },
-  { action: "notify_dev", icon: MessageSquareWarning, helper: "Ownership or intent is unclear, so ask the owning team to confirm before deciding." },
-  { action: "no_action", icon: CircleCheck, helper: "Low-risk drift, deprecated endpoint, or already-known issue. Dismiss for now." },
+const ACTIONS: { action: RecommendedAction; helper: string }[] = [
+  { action: "investigate", helper: "Open a security ticket for hands-on review of suspicious or undocumented behavior." },
+  { action: "update_spec", helper: "Traffic reflects intended, legitimate behavior, so update the spec to match it." },
+  { action: "notify_dev", helper: "Ownership or intent is unclear, so ask the owning team to confirm before deciding." },
+  { action: "no_action", helper: "Low-risk drift, deprecated endpoint, or already-known issue. Dismiss for now." },
 ];
 
-export function Investigation({ issue }: { issue: Issue }) {
-  const [resolvedAction, setResolvedAction] = useState<RecommendedAction | null>(null);
-
+export function Investigation({
+  issue,
+  resolvedAction,
+  onResolve,
+}: {
+  issue: Issue;
+  resolvedAction: RecommendedAction | null;
+  onResolve: (action: RecommendedAction) => void;
+}) {
   return (
-    <div className="px-6 py-6">
+    <div className="px-6 pt-6 pb-20">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2.5">
-          <MethodBadge method={issue.method} />
-          <h1 className="font-mono text-xl font-extrabold text-slate-900 dark:text-white">{issue.path}</h1>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <MethodBadge method={issue.method} />
+            <h1 className="font-mono text-xl font-extrabold text-slate-900 dark:text-white">{issue.path}</h1>
+          </div>
+          <DeterminationDropdown
+            resolvedAction={resolvedAction}
+            recommendedAction={issue.recommendedAction}
+            onSelect={onResolve}
+          />
         </div>
 
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -74,7 +88,7 @@ export function Investigation({ issue }: { issue: Issue }) {
               )}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
+            <div className="rounded-[8px] border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
               Not found in specification
             </div>
           )}
@@ -95,7 +109,7 @@ export function Investigation({ issue }: { issue: Issue }) {
               )}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
+            <div className="rounded-[8px] border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center text-xs font-bold text-slate-400 dark:border-slate-700 dark:bg-slate-800/30">
               No traffic observed
             </div>
           )}
@@ -106,68 +120,108 @@ export function Investigation({ issue }: { issue: Issue }) {
       {(issue.sampleRequestBody || issue.sampleResponseBody) && (
         <div className="mt-6 rounded-[12px] border border-slate-200/60 bg-white/50 p-6 glass shadow-sm animate-slide-up [animation-delay:300ms] dark:border-slate-800/60 dark:bg-slate-900/50">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Traffic Evidence</h3>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {issue.sampleRequestBody && (
-              <div>
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Request Trace</div>
-                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 font-mono text-[11px] text-indigo-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-stretch">
+            <div className="flex flex-col">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Request Trace</div>
+              {issue.sampleRequestBody ? (
+                <pre className="flex-1 overflow-x-auto rounded-[8px] bg-slate-900 p-4 font-mono text-[11px] text-indigo-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
                   {JSON.stringify(issue.sampleRequestBody, null, 2)}
                 </pre>
-              </div>
-            )}
-            {issue.sampleResponseBody && (
-              <div>
-                <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Response Trace</div>
-                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 font-mono text-[11px] text-emerald-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
+              ) : (
+                <EvidenceEmptyState label="No request body captured" hint="This method sends no body (e.g. GET), or none was recorded." />
+              )}
+            </div>
+            <div className="flex flex-col">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">Response Trace</div>
+              {issue.sampleResponseBody ? (
+                <pre className="flex-1 overflow-x-auto rounded-[8px] bg-slate-900 p-4 font-mono text-[11px] text-emerald-300 dark:bg-black/50 ring-1 ring-white/5 shadow-inner">
                   {JSON.stringify(issue.sampleResponseBody, null, 2)}
                 </pre>
-              </div>
-            )}
+              ) : (
+                <EvidenceEmptyState label="No response body captured" hint="No sample response was recorded for this traffic." />
+              )}
+            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Actions */}
-      <div className="mt-6 rounded-2xl border border-slate-200/60 bg-indigo-600/5 p-6 glass shadow-xl animate-slide-up [animation-delay:400ms] dark:border-indigo-500/10 mb-20">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Determination</h3>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Select the resolution path for this issue</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recommended:</span>
-            <ActionBadge action={issue.recommendedAction} />
-          </div>
-        </div>
-        
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-          {ACTIONS.map(({ action, icon: Icon, helper }) => {
-            const isSuggested = action === issue.recommendedAction;
-            const isChosen = resolvedAction === action;
-            return (
-              <div key={action} style={{ flex: "1 1 180px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <Button
-                  variant={isChosen ? "primary" : isSuggested ? "secondary" : "ghost"}
-                  size="lg"
-                  iconLeft={<Icon size={16} />}
-                  onClick={() => setResolvedAction(action)}
-                  style={{ width: "100%", justifyContent: "flex-start", borderRadius: "var(--radius-md)" }}
+// Single-select dropdown for choosing the resolution path. Replaces a
+// four-button banner (one full-width button per action, each with its own
+// helper paragraph) with a compact trigger that expands into a menu — the
+// same badge used everywhere else to represent an action (colored dot +
+// label) doubles as the option's identity here, with its description
+// underneath so the picker stays informative without staying open.
+function DeterminationDropdown({
+  resolvedAction,
+  recommendedAction,
+  onSelect,
+}: {
+  resolvedAction: RecommendedAction | null;
+  recommendedAction: RecommendedAction;
+  onSelect: (action: RecommendedAction) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const { anchorRef, rect } = useAnchoredMenu(isOpen);
+  // Until the reviewer actively picks something, the system's recommended
+  // action is what's in effect — same fallback the table uses for its
+  // Action column — so this control and the table never disagree about
+  // what an unresolved issue's current action is.
+  const effectiveAction = resolvedAction ?? recommendedAction;
+
+  return (
+    <div className="relative">
+      <button
+        ref={anchorRef}
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-slate-200 bg-white px-3.5 py-2 text-left transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/50"
+      >
+        <ActionBadge action={effectiveAction} />
+        <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-250 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && rect && createPortal(
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div
+            className="fixed z-50 w-80 rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-scale-up dark:border-slate-800 dark:bg-slate-900"
+            style={{ top: rect.bottom + 6, left: rect.right - 320 }}
+          >
+            {ACTIONS.map(({ action, helper }) => {
+              const isSelected = effectiveAction === action;
+              const isRecommended = action === recommendedAction;
+              return (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => {
+                    onSelect(action);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full cursor-pointer flex-col items-start gap-1 px-4 py-3 text-left transition-colors ${
+                    isSelected ? "bg-indigo-50/50 dark:bg-indigo-950/20" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  }`}
                 >
-                  {ACTION_LABELS[action]}
-                </Button>
-                <p style={{ font: "var(--text-caption)", color: "var(--fg-tertiary)", paddingLeft: 4, margin: 0 }}>{helper}</p>
-              </div>
-            );
-          })}
-        </div>
-        
-        {resolvedAction && (
-          <div className="mt-6 flex animate-scale-up items-center gap-3 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
-            <CircleCheck className="h-5 w-5" />
-            Resolution recorded: {ACTION_LABELS[resolvedAction]}
+                  <div className="flex w-full items-center justify-between gap-2">
+                    <ActionBadge action={action} />
+                    <div className="flex shrink-0 items-center gap-2">
+                      {isRecommended && (
+                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Recommended</span>
+                      )}
+                      {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />}
+                    </div>
+                  </div>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{helper}</p>
+                </button>
+              );
+            })}
           </div>
-        )}
-      </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
@@ -192,6 +246,19 @@ function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
         ),
       )}
     </>
+  );
+}
+
+// Fills the Request/Response Trace slot when there's nothing captured for
+// it, so a single-sided trace (e.g. a GET with no request body) doesn't
+// leave one side of the grid looking broken or empty by comparison.
+function EvidenceEmptyState({ label, hint }: { label: string; hint: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-[8px] border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center dark:border-slate-700 dark:bg-slate-800/30">
+      <PackageOpen className="h-6 w-6 text-slate-300 dark:text-slate-600" />
+      <div className="text-xs font-bold text-slate-400 dark:text-slate-500">{label}</div>
+      <div className="max-w-[220px] text-[11px] font-medium text-slate-400 dark:text-slate-500">{hint}</div>
+    </div>
   );
 }
 

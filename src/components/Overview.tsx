@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAnchoredMenu } from "../lib/useAnchoredMenu";
 import { ArrowDown, ArrowUp, ArrowUpDown, Calendar, ChevronDown, ChevronRight, Check, Search, SearchX, X, type LucideIcon } from "lucide-react";
-import type { Area, Issue, IssueType } from "../lib/types";
+import type { Area, Issue, IssueType, RecommendedAction } from "../lib/types";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -54,39 +55,6 @@ type ActionKey = (typeof ACTION_META)[number]["action"];
 
 const ACTION_OPTIONS: ActionKey[] = ACTION_META.map((m) => m.action);
 const ACTION_LABELS: Record<ActionKey, string> = Object.fromEntries(ACTION_META.map((m) => [m.action, m.label])) as Record<ActionKey, string>;
-
-// Menus render into a portal (document.body) positioned off the trigger's
-// measured rect, so they always float above surrounding cards instead of
-// being clipped or layered underneath sibling elements with their own
-// stacking context (e.g. the "glass" cards further down the page).
-function useAnchoredMenu(isOpen: boolean) {
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-
-  // Recompute continuously while open, not just once on open. The trigger
-  // sits in a sticky bar, so its viewport position keeps changing as the
-  // page scrolls (or the sticky bar locks into place) — without this, the
-  // menu stays pinned to wherever the button happened to be the instant it
-  // was clicked, and visibly detaches from it on any subsequent scroll.
-  useLayoutEffect(() => {
-    if (!isOpen) {
-      setRect(null);
-      return;
-    }
-    const update = () => {
-      if (anchorRef.current) setRect(anchorRef.current.getBoundingClientRect());
-    };
-    update();
-    window.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
-    return () => {
-      window.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
-    };
-  }, [isOpen]);
-
-  return { anchorRef, rect };
-}
 
 interface MultiSelectOptionsProps<T extends string> {
   values: T[];
@@ -257,10 +225,19 @@ function WindowPicker({ value, onChange }: { value: number; onChange: (minutes: 
 export function Overview({
   onSelectIssue,
   onVisibleIssuesChange,
+  resolvedActions = {},
 }: {
   onSelectIssue: (id: string) => void;
   onVisibleIssuesChange?: (ids: string[]) => void;
+  resolvedActions?: Record<string, RecommendedAction>;
 }) {
+  // A determination made in the drawer overrides the system's recommended
+  // action everywhere the table cares about "what action applies to this
+  // issue" — the Action column, its filter, and its facet counts — so
+  // resolving an issue actually moves it, rather than just relabeling a
+  // badge that then disagrees with the filters around it.
+  const effectiveAction = (i: Issue): ActionKey => (resolvedActions[i.id] ?? i.recommendedAction) as ActionKey;
+
   const [areaFilter, setAreaFilter] = useState<Area[]>([]);
   const [methodFilter, setMethodFilter] = useState<Method[]>([]);
   const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType[]>([]);
@@ -318,10 +295,10 @@ export function Overview({
       .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
       .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
       .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true))
-      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true))
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(effectiveAction(i)) : true))
       .filter((i) => (q ? i.path.toLowerCase().includes(q) : true))
       .sort((a, b) => (sortDir === "desc" ? sortValue(b) - sortValue(a) : sortValue(a) - sortValue(b)));
-  }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query, sortKey, sortDir]);
+  }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query, sortKey, sortDir, resolvedActions]);
 
   // Reports the currently visible (filtered + sorted) row order up to the
   // parent, so the investigation drawer can offer "next/previous" navigation
@@ -342,17 +319,17 @@ export function Overview({
     const areaBase = base
       .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
       .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true))
-      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(effectiveAction(i)) : true));
 
     const methodBase = base
       .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
       .filter((i) => (issueTypeFilter.length > 0 ? issueTypeFilter.includes(i.issueType) : true))
-      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(effectiveAction(i)) : true));
 
     const issueTypeBase = base
       .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
       .filter((i) => (methodFilter.length > 0 ? methodFilter.includes(i.method as Method) : true))
-      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(i.recommendedAction as ActionKey) : true));
+      .filter((i) => (actionFilter.length > 0 ? actionFilter.includes(effectiveAction(i)) : true));
 
     const actionBase = base
       .filter((i) => (areaFilter.length > 0 ? areaFilter.includes(i.area) : true))
@@ -372,9 +349,9 @@ export function Overview({
       area: tally(areaBase, (i) => i.area),
       method: tally(methodBase, (i) => i.method as Method),
       issueType: tally(issueTypeBase, (i) => i.issueType),
-      action: tally(actionBase, (i) => i.recommendedAction as ActionKey),
+      action: tally(actionBase, (i) => effectiveAction(i)),
     };
-  }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query]);
+  }, [windowedIssues, areaFilter, methodFilter, issueTypeFilter, actionFilter, query, resolvedActions]);
 
   // The overview stat strip is driven by `filtered` rather than `windowedIssues`
   // so that the area/method/issue-type/action/search filters — not just the
@@ -418,8 +395,8 @@ export function Overview({
   );
 
   const actionCounts = useMemo(
-    () => ACTION_META.map((m) => ({ ...m, count: filtered.filter((i) => i.recommendedAction === m.action).length })),
-    [filtered]
+    () => ACTION_META.map((m) => ({ ...m, count: filtered.filter((i) => effectiveAction(i) === m.action).length })),
+    [filtered, resolvedActions]
   );
 
   const hasActiveFilters = Boolean(areaFilter.length || methodFilter.length || issueTypeFilter.length || actionFilter.length || query);
@@ -439,7 +416,7 @@ export function Overview({
       </div>
 
       {/* Filter bar — sticky so filtering stays reachable while scrolling the page */}
-      <div className="sticky top-16 z-20 mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white/95 px-5 py-3 shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-950/95">
+      <div className="sticky top-16 z-20 mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-gray-100 bg-white/95 px-5 py-3 shadow-xs backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-950/95">
         <div className="relative" style={{ width: 256 }}>
           <Input
             value={query}
@@ -687,7 +664,7 @@ export function Overview({
                   <span className="font-mono text-[11px] font-medium text-slate-600 dark:text-slate-400">{issue.traffic7d.toLocaleString()} req</span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">{formatRelativeTime(issue.lastSeenMinutesAgo)}</span>
                   <div className="flex items-center justify-end gap-2">
-                    <ActionBadge action={issue.recommendedAction} />
+                    <ActionBadge action={effectiveAction(issue)} />
                     <ChevronRight className="h-4 w-4 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-500" />
                   </div>
               </div>

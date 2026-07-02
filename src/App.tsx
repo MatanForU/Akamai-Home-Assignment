@@ -4,6 +4,7 @@ import akamaiLogo from "./assets/akamai-logo.svg";
 import { Overview } from "./components/Overview";
 import { Investigation } from "./components/Investigation";
 import { issues } from "./lib/mockData";
+import type { RecommendedAction } from "./lib/types";
 
 function useDarkMode() {
   const [dark, setDark] = useState(() => {
@@ -25,6 +26,10 @@ function useDarkMode() {
 function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleIssueIds, setVisibleIssueIds] = useState<string[]>([]);
+  // Keyed by issue id, so a determination made in the drawer is remembered
+  // per-issue (surviving prev/next navigation) and reflected back in the
+  // table's Action column, not just held as local, throwaway drawer state.
+  const [resolvedActions, setResolvedActions] = useState<Record<string, RecommendedAction>>({});
   const [dark, setDark] = useDarkMode();
   const selectedIssue = issues.find((i) => i.id === selectedId) ?? null;
 
@@ -77,7 +82,11 @@ function App() {
       </header>
 
       <main id="main">
-        <Overview onSelectIssue={setSelectedId} onVisibleIssuesChange={setVisibleIssueIds} />
+        <Overview
+          onSelectIssue={setSelectedId}
+          onVisibleIssuesChange={setVisibleIssueIds}
+          resolvedActions={resolvedActions}
+        />
       </main>
 
       {selectedIssue && (
@@ -130,7 +139,13 @@ function App() {
             </button>
           </div>
           <div className="fixed inset-y-0 right-0 z-50 w-full max-w-6xl overflow-y-auto bg-[var(--background)] shadow-2xl border-l border-slate-200/60 dark:border-slate-800/60 animate-drawer-slide-in">
-            <Investigation issue={selectedIssue} />
+            <Investigation
+              issue={selectedIssue}
+              resolvedAction={resolvedActions[selectedIssue.id] ?? null}
+              onResolve={(action) =>
+                setResolvedActions((prev) => ({ ...prev, [selectedIssue.id]: action }))
+              }
+            />
           </div>
         </>
       )}
